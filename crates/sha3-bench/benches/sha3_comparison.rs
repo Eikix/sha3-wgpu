@@ -39,7 +39,7 @@ fn benchmark_batch_sizes(c: &mut Criterion) {
 
     for batch_size in batch_sizes {
         let data: Vec<Vec<u8>> =
-            (0..batch_size).map(|i| format!("test input number {}", i).into_bytes()).collect();
+            (0..batch_size).map(|i| format!("test input number {i}").into_bytes()).collect();
 
         // Ensure all inputs are same length for GPU batching
         let padded_data: Vec<Vec<u8>> = data
@@ -65,8 +65,8 @@ fn benchmark_batch_sizes(c: &mut Criterion) {
         // Benchmark GPU
         let input_refs: Vec<&[u8]> = padded_data.iter().map(|v| v.as_slice()).collect();
         group.bench_with_input(BenchmarkId::new("GPU", batch_size), &input_refs, |b, data| {
-            b.to_async(tokio::runtime::Runtime::new().unwrap()).iter(|| async {
-                let result = bench_gpu_sha3(&gpu_hasher, black_box(data)).await;
+            b.iter(|| {
+                let result = pollster::block_on(bench_gpu_sha3(&gpu_hasher, black_box(data)));
                 black_box(result);
             });
         });
@@ -101,8 +101,8 @@ fn benchmark_input_sizes(c: &mut Criterion) {
         // Benchmark GPU
         let input_refs: Vec<&[u8]> = data.iter().map(|v| v.as_slice()).collect();
         group.bench_with_input(BenchmarkId::new("GPU", input_size), &input_refs, |b, data| {
-            b.to_async(tokio::runtime::Runtime::new().unwrap()).iter(|| async {
-                let result = bench_gpu_sha3(&gpu_hasher, black_box(data)).await;
+            b.iter(|| {
+                let result = pollster::block_on(bench_gpu_sha3(&gpu_hasher, black_box(data)));
                 black_box(result);
             });
         });
@@ -119,7 +119,7 @@ fn benchmark_single_vs_batch(c: &mut Criterion) {
 
     let data: Vec<Vec<u8>> = (0..batch_size)
         .map(|i| {
-            let mut v = format!("test input {}", i).into_bytes();
+            let mut v = format!("test input {i}").into_bytes();
             v.resize(input_size, 0);
             v
         })
@@ -150,8 +150,8 @@ fn benchmark_single_vs_batch(c: &mut Criterion) {
     // GPU single (actually batched but small)
     let input_refs: Vec<&[u8]> = data.iter().map(|v| v.as_slice()).collect();
     group.bench_function("GPU_batch_x100", |b| {
-        b.to_async(tokio::runtime::Runtime::new().unwrap()).iter(|| async {
-            let result = bench_gpu_sha3(&gpu_hasher, black_box(&input_refs)).await;
+        b.iter(|| {
+            let result = pollster::block_on(bench_gpu_sha3(&gpu_hasher, black_box(&input_refs)));
             black_box(result);
         });
     });
@@ -171,7 +171,7 @@ fn benchmark_large_batch(c: &mut Criterion) {
     for batch_size in batch_sizes {
         let data: Vec<Vec<u8>> = (0..batch_size)
             .map(|i| {
-                let mut v = format!("input {}", i).into_bytes();
+                let mut v = format!("input {i}").into_bytes();
                 v.resize(input_size, 0);
                 v
             })
@@ -191,8 +191,8 @@ fn benchmark_large_batch(c: &mut Criterion) {
         // GPU benchmark
         let input_refs: Vec<&[u8]> = data.iter().map(|v| v.as_slice()).collect();
         group.bench_with_input(BenchmarkId::new("GPU", batch_size), &input_refs, |b, data| {
-            b.to_async(tokio::runtime::Runtime::new().unwrap()).iter(|| async {
-                let result = bench_gpu_sha3(&gpu_hasher, black_box(data)).await;
+            b.iter(|| {
+                let result = pollster::block_on(bench_gpu_sha3(&gpu_hasher, black_box(data)));
                 black_box(result);
             });
         });

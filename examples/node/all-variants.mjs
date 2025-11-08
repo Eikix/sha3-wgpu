@@ -1,7 +1,7 @@
 // Demonstrating all SHA-3 variants
-// Run with: node examples/node/all-variants.mjs
+// Run with: bun examples/node/all-variants.mjs
 
-import { Sha3WasmHasher } from '../../pkg/sha3_wasm.js';
+import init, { Sha3WasmHasher } from '../../pkg/sha3_wasm.js';
 
 async function testVariant(variantName) {
     console.log(`\n=== ${variantName.toUpperCase()} ===`);
@@ -34,6 +34,9 @@ async function testShakeVariant(variantName, outputLengths) {
 }
 
 async function main() {
+    // Initialize WASM module
+    await init();
+
     console.log('=== SHA-3 Family Demonstration ===');
     console.log('Testing all SHA-3 variants with GPU acceleration\n');
 

@@ -16,13 +16,12 @@
     "rootDir": "./"
   },
   "include": [
-    "pkg/**/*",
-    "src/**/*"
+    "pkg/**/*.ts",
+    "pkg/**/*.d.ts"
   ],
   "exclude": [
     "node_modules",
     "target",
-    "pkg",
     "pkg-web",
     "pkg-bundler"
   ]

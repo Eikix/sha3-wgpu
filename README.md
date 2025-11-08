@@ -1,6 +1,6 @@
 # sha3-wgpu
 
-GPU-accelerated SHA-3 library using WebGPU (WGSL + wgpu-rs) with WASM bindings for Node.js and Bun.js.
+GPU-accelerated SHA-3 library using WebGPU (WGSL + wgpu-rs) with WASM bindings for Bun.js.
 
 This library provides **batch hashing** capabilities, making it ideal for scenarios where you need to hash many inputs in parallel. The GPU implementation excels when processing 100+ hashes simultaneously.
 
@@ -9,7 +9,7 @@ This library provides **batch hashing** capabilities, making it ideal for scenar
 - **GPU-Accelerated**: Uses WGSL compute shaders for parallel SHA-3 computation
 - **Batch Processing**: Optimized for hashing multiple inputs simultaneously
 - **All SHA-3 Variants**: Supports SHA3-224, SHA3-256, SHA3-384, SHA3-512, SHAKE128, and SHAKE256
-- **WASM Support**: Full Node.js and Bun.js compatibility via WASM bindings
+- **WASM Support**: Full Bun.js compatibility via WASM bindings
 - **Memory Optimized**: Proper GPU memory alignment and bank conflict avoidance
 - **Tested**: Comprehensive tests against official SHA-3 implementations
 - **Benchmarked**: Criterion benchmarks comparing GPU vs CPU performance
@@ -20,14 +20,14 @@ This project uses a Rust workspace with multiple crates:
 
 - **`sha3-core`**: Core SHA-3 types, variant definitions, and utilities
 - **`sha3-wgpu`**: GPU-accelerated implementation using WGSL compute shaders and wgpu-rs
-- **`sha3-wasm`**: WASM bindings using wasm-bindgen for Node.js/Bun.js integration
+- **`sha3-wasm`**: WASM bindings using wasm-bindgen for Bun.js integration
 - **`sha3-bench`**: Criterion benchmarking suite for GPU vs CPU performance comparison
 
 ## Prerequisites
 
 - Rust (latest stable)
 - wasm-pack (`cargo install wasm-pack`)
-- Node.js 18+ or Bun.js
+- **Bun.js** (required for WASM usage)
 - GPU with WebGPU support (for WASM usage) or Vulkan/Metal/DX12 (for native usage)
 
 ## Quick Start
@@ -38,7 +38,7 @@ This project uses a Rust workspace with multiple crates:
 # Build Rust library
 cargo build --release
 
-# Build WASM module for Node.js/Bun
+# Build WASM module for Bun.js
 npm run build:release
 ```
 
@@ -48,9 +48,16 @@ npm run build:release
 # Rust example
 cargo run --example basic
 
-# Node.js/Bun examples
-node examples/node/basic.mjs
+# Bun.js examples (using npm scripts)
+npm run example              # Basic usage example
+npm run example:performance  # Performance comparison (GPU vs CPU)
+npm run example:variants     # All SHA-3 variants demo
+npm run examples             # Run performance demo (default)
+
+# Or run directly with Bun.js
+bun examples/node/basic.mjs
 bun examples/node/batch-performance.mjs
+bun examples/node/all-variants.mjs
 ```
 
 ### 3. Run tests
@@ -65,17 +72,19 @@ cargo bench
 
 ## Building
 
-### Build WASM module for Node.js/Bun:
+### Build WASM module for Bun.js:
 
 ```bash
-npm run build                # Development build
-npm run build:release        # Optimized release build
+npm run build                # Development build (targets web for Bun.js)
+npm run build:release        # Optimized release build (targets web for Bun.js)
 ```
+
+**Note:** The build commands use `--target web` which is appropriate for Bun.js. The generated WASM package works with Bun.js's Web API support.
 
 ### Build for web browsers:
 
 ```bash
-npm run build:web
+npm run build:web            # Same as build (targets web)
 ```
 
 ### Build for bundlers (webpack, vite, etc.):
@@ -112,10 +121,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 ```
 
-### Node.js/Bun
+### Bun.js
 
 ```javascript
-import { Sha3WasmHasher } from './pkg/sha3_wasm.js';
+import init, { Sha3WasmHasher } from './pkg/sha3_wasm.js';
+
+// Initialize WASM module (required for web target)
+await init();
 
 // Create hasher
 const hasher = await new Sha3WasmHasher('sha3-256');
@@ -147,11 +159,15 @@ The GPU implementation is optimized for **batch processing**. Performance improv
 - **100+ hashes**: GPU significantly outperforms CPU
 - **1000+ hashes**: GPU can be 5-10x faster
 
-Run `cargo bench` to benchmark on your hardware, or try the Node.js performance demo:
+Run `cargo bench` to benchmark on your hardware, or try the Bun.js performance demo:
 
 ```bash
-node examples/node/batch-performance.mjs
+npm run example:performance
+# or
+npm run examples
 ```
+
+This will run a comprehensive performance comparison showing GPU vs CPU performance across different batch sizes (10, 50, 100, 500, 1000 hashes), displaying speedup ratios and throughput metrics.
 
 ## GPU Optimizations
 
@@ -168,7 +184,7 @@ This implementation includes several GPU-specific optimizations:
 ```
 .
 ├── Cargo.toml                      # Workspace configuration
-├── package.json                    # Node.js package configuration
+├── package.json                    # Bun.js package configuration
 ├── crates/
 │   ├── sha3-core/                  # Core SHA-3 types and utilities
 │   │   ├── src/
@@ -181,7 +197,7 @@ This implementation includes several GPU-specific optimizations:
 │   │   │   ├── context.rs          # GPU context management
 │   │   │   ├── compute.rs          # Compute pipeline & batch processing
 │   │   │   └── error.rs            # GPU error types
-│   ├── sha3-wasm/                  # WASM bindings for Node.js/Bun
+│   ├── sha3-wasm/                  # WASM bindings for Bun.js
 │   │   └── src/lib.rs              # WASM API
 │   └── sha3-bench/                 # Benchmarking suite
 │       ├── benches/
@@ -189,11 +205,11 @@ This implementation includes several GPU-specific optimizations:
 │       └── src/main.rs             # Benchmark runner
 ├── examples/
 │   ├── basic.rs                    # Rust example
-│   └── node/                       # Node.js/Bun examples
+│   └── node/                       # Bun.js examples
 │       ├── basic.mjs               # Basic usage
 │       ├── batch-performance.mjs   # Performance comparison
 │       ├── all-variants.mjs        # All SHA-3 variants
-│       └── README.md               # Node.js examples documentation
+│       └── README.md               # Bun.js examples documentation
 └── pkg/                            # Generated WASM package (gitignored)
 ```
 
@@ -258,6 +274,32 @@ The compute shader (`sha3.wgsl`) implements:
 - **Input buffer**: Flattened u32 array with 16-byte alignment
 - **Output buffer**: Flattened u32 array with 16-byte alignment
 - **Uniform buffer**: Hash parameters (batch size, input length, rate, output size)
+
+## Troubleshooting
+
+### Bun.js WASM Runtime Errors
+
+If you encounter `RuntimeError: unreachable` when running Bun.js examples, this may be due to WebGPU initialization issues.
+
+**Solutions:**
+1. **Check Bun.js version**: Ensure you're using a recent version of Bun.js with WebGPU support
+   ```bash
+   bun --version
+   ```
+
+2. **Use native Rust**: For reliable GPU acceleration, use the native Rust API:
+   ```bash
+   cargo run --example basic
+   ```
+
+3. **Check GPU availability**: Ensure your system has a compatible GPU with WebGPU support (Chrome/Edge browsers) or native drivers (Vulkan/Metal/DX12)
+
+### GPU Initialization Failures
+
+If GPU initialization fails:
+- Ensure you have a compatible GPU installed
+- Check that GPU drivers are up to date
+- For native Rust usage, ensure Vulkan (Linux/Windows), Metal (macOS), or DX12 (Windows) drivers are installed
 
 ## Future Improvements
 

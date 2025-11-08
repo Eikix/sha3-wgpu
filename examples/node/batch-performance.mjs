@@ -1,18 +1,18 @@
-// Batch performance demonstration for Node.js/Bun
+// Batch performance demonstration for Bun.js
 // Shows the performance benefits of GPU batch processing
-// Run with: node examples/node/batch-performance.mjs
+// Run with: bun examples/node/batch-performance.mjs
 
-import { Sha3WasmHasher } from '../../pkg/sha3_wasm.js';
+import init, { Sha3WasmHasher } from '../../pkg/sha3_wasm.js';
 import crypto from 'crypto';
 
 // Helper to measure execution time
-function measureTime(fn, label) {
+async function measureTime(fn, label) {
     const start = performance.now();
-    const result = fn();
+    await fn();
     const end = performance.now();
-    const duration = (end - start).toFixed(2);
-    console.log(`${label}: ${duration}ms`);
-    return result;
+    const duration = end - start;
+    console.log(`${label}: ${duration.toFixed(2)}ms`);
+    return duration;
 }
 
 async function benchmarkCPU(inputs) {
@@ -33,6 +33,10 @@ async function benchmarkGPU(hasher, inputs) {
 
 async function main() {
     console.log('=== GPU vs CPU Batch Performance Comparison ===\n');
+
+    // Initialize WASM module
+    console.log('Initializing WASM module...');
+    await init();
 
     // Initialize GPU hasher
     console.log('Initializing GPU hasher...');
@@ -57,20 +61,18 @@ async function main() {
         await benchmarkGPU(hasher, inputs);
 
         // CPU benchmark
-        const cpuTime = await measureTime(
-            () => benchmarkCPU(inputs),
-            `CPU (Node.js crypto)`
+        const cpuMs = await measureTime(
+            async () => await benchmarkCPU(inputs),
+            `CPU (Bun.js crypto)`
         );
 
         // GPU benchmark
-        const gpuTime = await measureTime(
+        const gpuMs = await measureTime(
             async () => await benchmarkGPU(hasher, inputs),
             `GPU (WGPU + WASM)   `
         );
 
         // Calculate speedup
-        const cpuMs = parseFloat(cpuTime);
-        const gpuMs = parseFloat(gpuTime);
         const speedup = (cpuMs / gpuMs).toFixed(2);
         const throughput = (batchSize / (gpuMs / 1000)).toFixed(0);
 

@@ -1,6 +1,6 @@
-# Node.js/Bun Examples
+# Bun.js Examples
 
-This directory contains examples demonstrating how to use the GPU-accelerated SHA-3 library in Node.js or Bun.
+This directory contains examples demonstrating how to use the GPU-accelerated SHA-3 library in Bun.js.
 
 ## Prerequisites
 
@@ -9,7 +9,7 @@ This directory contains examples demonstrating how to use the GPU-accelerated SH
    npm run build
    ```
 
-2. Install Node.js 18+ or Bun
+2. Install Bun.js (required for WASM usage)
 
 ## Examples
 
@@ -18,8 +18,6 @@ This directory contains examples demonstrating how to use the GPU-accelerated SH
 Demonstrates single and batch hashing:
 
 ```bash
-node examples/node/basic.mjs
-# or
 bun examples/node/basic.mjs
 ```
 
@@ -33,13 +31,11 @@ Shows:
 Compares GPU vs CPU performance across different batch sizes:
 
 ```bash
-node examples/node/batch-performance.mjs
-# or
 bun examples/node/batch-performance.mjs
 ```
 
 Shows:
-- Performance comparison GPU vs Node.js crypto
+- Performance comparison GPU vs CPU (Bun.js crypto)
 - Speedup measurements
 - Throughput calculations
 
@@ -50,8 +46,6 @@ Shows:
 Demonstrates all SHA-3 variants:
 
 ```bash
-node examples/node/all-variants.mjs
-# or
 bun examples/node/all-variants.mjs
 ```
 
@@ -64,7 +58,10 @@ Shows:
 ### Creating a Hasher
 
 ```javascript
-import { Sha3WasmHasher } from '../../pkg/sha3_wasm.js';
+import init, { Sha3WasmHasher } from '../../pkg/sha3_wasm.js';
+
+// Initialize WASM module (required for web target)
+await init();
 
 const hasher = await new Sha3WasmHasher('sha3-256');
 ```

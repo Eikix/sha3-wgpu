@@ -47,7 +47,7 @@ impl GpuContext {
             ..Default::default()
         };
 
-        let features = required_features.unwrap_or_else(|| {
+        let features = required_features.unwrap_or({
             // Request features needed for SHA-3 compute shader
             // SHADER_INT64 is required for u64 operations in the shader
             Features::SHADER_INT64

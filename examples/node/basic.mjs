@@ -1,9 +1,11 @@
-// Basic SHA-3 GPU example for Node.js/Bun
-// Run with: node examples/node/basic.mjs
+// Basic SHA-3 GPU example for Bun.js
+// Run with: bun examples/node/basic.mjs
 
-import { Sha3WasmHasher } from '../../pkg/sha3_wasm.js';
+import init, { Sha3WasmHasher } from '../../pkg/sha3_wasm.js';
 
 async function main() {
+    // Initialize WASM module
+    await init();
     console.log('=== GPU-Accelerated SHA-3 Basic Example ===\n');
 
     // Create a hasher for SHA3-256
