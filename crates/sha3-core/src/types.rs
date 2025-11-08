@@ -33,19 +33,19 @@ impl Sha3Variant {
     /// The rate is the number of bytes absorbed/squeezed per permutation
     pub fn rate_bytes(&self) -> usize {
         match self {
-            Sha3Variant::Sha3_224 => 144,  // 1152 bits = 144 bytes
-            Sha3Variant::Sha3_256 => 136,  // 1088 bits = 136 bytes
-            Sha3Variant::Sha3_384 => 104,  // 832 bits = 104 bytes
-            Sha3Variant::Sha3_512 => 72,   // 576 bits = 72 bytes
-            Sha3Variant::Shake128 => 168,  // 1344 bits = 168 bytes
-            Sha3Variant::Shake256 => 136,  // 1088 bits = 136 bytes
+            Sha3Variant::Sha3_224 => 144, // 1152 bits = 144 bytes
+            Sha3Variant::Sha3_256 => 136, // 1088 bits = 136 bytes
+            Sha3Variant::Sha3_384 => 104, // 832 bits = 104 bytes
+            Sha3Variant::Sha3_512 => 72,  // 576 bits = 72 bytes
+            Sha3Variant::Shake128 => 168, // 1344 bits = 168 bytes
+            Sha3Variant::Shake256 => 136, // 1088 bits = 136 bytes
         }
     }
 
     /// Returns the capacity (c) in bytes for this SHA-3 variant
     /// The capacity is the security parameter (rate + capacity = 1600 bits)
     pub fn capacity_bytes(&self) -> usize {
-        200 - self.rate_bytes()  // Total state is 1600 bits = 200 bytes
+        200 - self.rate_bytes() // Total state is 1600 bits = 200 bytes
     }
 
     /// Returns the domain separation byte for this variant
@@ -54,8 +54,8 @@ impl Sha3Variant {
             Sha3Variant::Sha3_224
             | Sha3Variant::Sha3_256
             | Sha3Variant::Sha3_384
-            | Sha3Variant::Sha3_512 => 0x06,  // SHA-3
-            Sha3Variant::Shake128 | Sha3Variant::Shake256 => 0x1F,  // SHAKE
+            | Sha3Variant::Sha3_512 => 0x06, // SHA-3
+            Sha3Variant::Shake128 | Sha3Variant::Shake256 => 0x1F, // SHAKE
         }
     }
 }
@@ -76,12 +76,7 @@ pub struct BatchHashParams {
 impl BatchHashParams {
     /// Creates new batch parameters
     pub fn new(variant: Sha3Variant, num_hashes: usize, input_length: usize) -> Self {
-        Self {
-            variant,
-            num_hashes,
-            input_length,
-            output_length: None,
-        }
+        Self { variant, num_hashes, input_length, output_length: None }
     }
 
     /// Sets custom output length (for SHAKE variants)
@@ -92,8 +87,6 @@ impl BatchHashParams {
 
     /// Returns the output length in bytes for this batch
     pub fn get_output_bytes(&self) -> usize {
-        self.output_length
-            .unwrap_or_else(|| self.variant.output_bytes())
+        self.output_length.unwrap_or_else(|| self.variant.output_bytes())
     }
 }
-

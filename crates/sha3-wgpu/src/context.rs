@@ -21,10 +21,8 @@ impl GpuContext {
         required_features: Option<Features>,
     ) -> Result<Self, GpuSha3Error> {
         // Create wgpu instance
-        let instance = Instance::new(InstanceDescriptor {
-            backends: Backends::all(),
-            ..Default::default()
-        });
+        let instance =
+            Instance::new(InstanceDescriptor { backends: Backends::all(), ..Default::default() });
 
         // Request adapter (GPU)
         let adapter = instance
@@ -39,18 +37,20 @@ impl GpuContext {
         let adapter_info = adapter.get_info();
 
         // Get adapter limits and features
-        let mut limits = Limits::default();
-
         // Increase buffer size limits for batch processing
-        limits.max_buffer_size = 1 << 30; // 1GB max buffer
-        limits.max_storage_buffer_binding_size = 1 << 30;
-        limits.max_compute_workgroup_storage_size = 16384;
-        limits.max_compute_invocations_per_workgroup = 256;
-        limits.max_compute_workgroup_size_x = 256;
+        let limits = Limits {
+            max_buffer_size: 1 << 30, // 1GB max buffer
+            max_storage_buffer_binding_size: 1 << 30,
+            max_compute_workgroup_storage_size: 16384,
+            max_compute_invocations_per_workgroup: 256,
+            max_compute_workgroup_size_x: 256,
+            ..Default::default()
+        };
 
         let features = required_features.unwrap_or_else(|| {
             // Request features needed for SHA-3 compute shader
-            Features::empty()
+            // SHADER_INT64 is required for u64 operations in the shader
+            Features::SHADER_INT64
         });
 
         // Request device and queue
@@ -64,13 +64,9 @@ impl GpuContext {
                 None,
             )
             .await
-            .map_err(|e| GpuSha3Error::GpuError(format!("Failed to create device: {}", e)))?;
+            .map_err(|e| GpuSha3Error::GpuError(format!("Failed to create device: {e}")))?;
 
-        Ok(Self {
-            device,
-            queue,
-            adapter_info,
-        })
+        Ok(Self { device, queue, adapter_info })
     }
 
     /// Get reference to the device

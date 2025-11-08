@@ -57,20 +57,14 @@ mod tests {
         }
 
         // Compare results
-        assert_eq!(
-            gpu_results.len(),
-            expected.len(),
-            "Result length mismatch for {:?}",
-            variant
-        );
+        assert_eq!(gpu_results.len(), expected.len(), "Result length mismatch for {:?}", variant);
 
-        for (i, (gpu_chunk, ref_chunk)) in gpu_results
-            .chunks(output_size)
-            .zip(expected.chunks(output_size))
-            .enumerate()
+        for (i, (gpu_chunk, ref_chunk)) in
+            gpu_results.chunks(output_size).zip(expected.chunks(output_size)).enumerate()
         {
             assert_eq!(
-                gpu_chunk, ref_chunk,
+                gpu_chunk,
+                ref_chunk,
                 "Hash mismatch at index {} for {:?}\nGPU:  {}\nCPU:  {}",
                 i,
                 variant,
@@ -85,17 +79,13 @@ mod tests {
     #[tokio::test]
     async fn test_sha3_256_empty() {
         let inputs = vec![b"".as_slice()];
-        test_variant_against_reference(Sha3Variant::Sha3_256, &inputs)
-            .await
-            .unwrap();
+        test_variant_against_reference(Sha3Variant::Sha3_256, &inputs).await.unwrap();
     }
 
     #[tokio::test]
     async fn test_sha3_256_single() {
         let inputs = vec![b"hello world".as_slice()];
-        test_variant_against_reference(Sha3Variant::Sha3_256, &inputs)
-            .await
-            .unwrap();
+        test_variant_against_reference(Sha3Variant::Sha3_256, &inputs).await.unwrap();
     }
 
     #[tokio::test]
@@ -106,57 +96,35 @@ mod tests {
             b"batch".as_slice(),
             b"tests".as_slice(),
         ];
-        test_variant_against_reference(Sha3Variant::Sha3_256, &inputs)
-            .await
-            .unwrap();
+        test_variant_against_reference(Sha3Variant::Sha3_256, &inputs).await.unwrap();
     }
 
     #[tokio::test]
     async fn test_sha3_256_large_batch() {
-        let data: Vec<Vec<u8>> = (0..100)
-            .map(|i| format!("test input number {}", i).into_bytes())
-            .collect();
+        // Ensure all inputs have the same length by using fixed-width formatting
+        let data: Vec<Vec<u8>> =
+            (0..100).map(|i| format!("test input number {:03}", i).into_bytes()).collect();
         let inputs: Vec<&[u8]> = data.iter().map(|v| v.as_slice()).collect();
 
-        test_variant_against_reference(Sha3Variant::Sha3_256, &inputs)
-            .await
-            .unwrap();
+        test_variant_against_reference(Sha3Variant::Sha3_256, &inputs).await.unwrap();
     }
 
     #[tokio::test]
     async fn test_sha3_224_batch() {
-        let inputs = vec![
-            b"test1".as_slice(),
-            b"test2".as_slice(),
-            b"test3".as_slice(),
-        ];
-        test_variant_against_reference(Sha3Variant::Sha3_224, &inputs)
-            .await
-            .unwrap();
+        let inputs = vec![b"test1".as_slice(), b"test2".as_slice(), b"test3".as_slice()];
+        test_variant_against_reference(Sha3Variant::Sha3_224, &inputs).await.unwrap();
     }
 
     #[tokio::test]
     async fn test_sha3_384_batch() {
-        let inputs = vec![
-            b"test1".as_slice(),
-            b"test2".as_slice(),
-            b"test3".as_slice(),
-        ];
-        test_variant_against_reference(Sha3Variant::Sha3_384, &inputs)
-            .await
-            .unwrap();
+        let inputs = vec![b"test1".as_slice(), b"test2".as_slice(), b"test3".as_slice()];
+        test_variant_against_reference(Sha3Variant::Sha3_384, &inputs).await.unwrap();
     }
 
     #[tokio::test]
     async fn test_sha3_512_batch() {
-        let inputs = vec![
-            b"test1".as_slice(),
-            b"test2".as_slice(),
-            b"test3".as_slice(),
-        ];
-        test_variant_against_reference(Sha3Variant::Sha3_512, &inputs)
-            .await
-            .unwrap();
+        let inputs = vec![b"test1".as_slice(), b"test2".as_slice(), b"test3".as_slice()];
+        test_variant_against_reference(Sha3Variant::Sha3_512, &inputs).await.unwrap();
     }
 
     #[tokio::test]
@@ -169,9 +137,7 @@ mod tests {
             Sha3Variant::Sha3_384,
             Sha3Variant::Sha3_512,
         ] {
-            test_variant_against_reference(*variant, &inputs)
-                .await
-                .unwrap();
+            test_variant_against_reference(*variant, &inputs).await.unwrap();
         }
     }
 
@@ -180,9 +146,7 @@ mod tests {
         let long_input = vec![b'a'; 10000];
         let inputs = vec![long_input.as_slice()];
 
-        test_variant_against_reference(Sha3Variant::Sha3_256, &inputs)
-            .await
-            .unwrap();
+        test_variant_against_reference(Sha3Variant::Sha3_256, &inputs).await.unwrap();
     }
 
     #[tokio::test]
@@ -194,15 +158,8 @@ mod tests {
         let input3 = b"a very long input that spans many more bytes than the others";
 
         // Test each individually since batch requires same length
-        test_variant_against_reference(Sha3Variant::Sha3_256, &[input1])
-            .await
-            .unwrap();
-        test_variant_against_reference(Sha3Variant::Sha3_256, &[input2])
-            .await
-            .unwrap();
-        test_variant_against_reference(Sha3Variant::Sha3_256, &[input3])
-            .await
-            .unwrap();
+        test_variant_against_reference(Sha3Variant::Sha3_256, &[input1]).await.unwrap();
+        test_variant_against_reference(Sha3Variant::Sha3_256, &[input2]).await.unwrap();
+        test_variant_against_reference(Sha3Variant::Sha3_256, &[input3]).await.unwrap();
     }
 }
-

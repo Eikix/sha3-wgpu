@@ -1,8 +1,8 @@
 //! GPU compute pipeline for SHA-3 batch hashing
 
 use sha3_core::{BatchHashParams, Sha3Variant};
-use wgpu::*;
 use wgpu::util::DeviceExt;
+use wgpu::*;
 
 use crate::{context::GpuContext, error::GpuSha3Error};
 
@@ -98,12 +98,7 @@ impl GpuSha3Hasher {
             compilation_options: Default::default(),
         });
 
-        Ok(Self {
-            context,
-            variant,
-            pipeline,
-            bind_group_layout,
-        })
+        Ok(Self { context, variant, pipeline, bind_group_layout })
     }
 
     /// Hash a batch of inputs (all must be the same length)
@@ -144,12 +139,20 @@ impl GpuSha3Hasher {
             output_bytes: params.get_output_bytes() as u32,
         };
 
-        // Calculate buffer sizes (pad to 4-byte alignment for u32 storage)
+        // Calculate buffer sizes (pad to 16-byte alignment to match WGSL struct alignment)
         let total_input_bytes = params.num_hashes * params.input_length;
-        let input_buffer_size = ((total_input_bytes + 3) / 4) * 4; // Align to u32
+        let input_buffer_size = if total_input_bytes == 0 {
+            16 // Minimum size for empty input (16-byte alignment)
+        } else {
+            ((total_input_bytes + 15) / 16) * 16 // Align to 16 bytes
+        };
 
         let total_output_bytes = params.num_hashes * params.get_output_bytes();
-        let output_buffer_size = ((total_output_bytes + 3) / 4) * 4; // Align to u32
+        let output_buffer_size = if total_output_bytes == 0 {
+            16 // Minimum size for empty output (16-byte alignment)
+        } else {
+            ((total_output_bytes + 15) / 16) * 16 // Align to 16 bytes
+        };
 
         // Create input buffer and copy data
         let input_buffer = device.create_buffer(&BufferDescriptor {
@@ -195,18 +198,9 @@ impl GpuSha3Hasher {
             label: Some("SHA-3 Bind Group"),
             layout: &self.bind_group_layout,
             entries: &[
-                BindGroupEntry {
-                    binding: 0,
-                    resource: input_buffer.as_entire_binding(),
-                },
-                BindGroupEntry {
-                    binding: 1,
-                    resource: output_buffer.as_entire_binding(),
-                },
-                BindGroupEntry {
-                    binding: 2,
-                    resource: uniform_buffer.as_entire_binding(),
-                },
+                BindGroupEntry { binding: 0, resource: input_buffer.as_entire_binding() },
+                BindGroupEntry { binding: 1, resource: output_buffer.as_entire_binding() },
+                BindGroupEntry { binding: 2, resource: uniform_buffer.as_entire_binding() },
             ],
         });
 
@@ -256,7 +250,7 @@ impl GpuSha3Hasher {
         receiver
             .await
             .map_err(|_| GpuSha3Error::GpuError("Failed to receive buffer mapping result".into()))?
-            .map_err(|e| GpuSha3Error::GpuError(format!("Buffer mapping failed: {:?}", e)))?;
+            .map_err(|e| GpuSha3Error::GpuError(format!("Buffer mapping failed: {e:?}")))?;
 
         // Extract output data
         let data = buffer_slice.get_mapped_range();
