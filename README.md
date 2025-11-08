@@ -275,7 +275,13 @@ WASM tests cover:
 - **Correctness verification**: Known SHA-3 test vectors (NIST vectors)
 - **Edge cases**: Boundary conditions, hasher reuse, large inputs (1MB+)
 
-**Note**: WASM tests run in an actual browser environment to properly test WebGPU integration. They require a browser with WebGPU support (Firefox or Chrome).
+**Important Notes:**
+
+- WASM tests run in an actual browser environment to properly test WebGPU integration
+- **Tests require a GPU with WebGPU support** - they will fail in headless CI environments without GPU
+- Run these tests **locally** on a machine with a compatible GPU and WebGPU-enabled browser
+- Only ~5 tests (type conversions and error handling) will pass in CI without GPU
+- The remaining 50+ tests require actual WebGPU initialization and will fail in CI (this is expected)
 
 ## Benchmarking
 
@@ -358,7 +364,9 @@ MIT OR Apache-2.0
 
 Contributions are welcome! Please ensure:
 
-- All tests pass (`cargo test`)
+- All Rust tests pass (`cargo test`)
+- WASM binding tests pass locally (`wasm-pack test --headless --firefox crates/sha3-wasm`)
+  - Note: WASM tests require a GPU and will fail in CI - this is expected
 - Code is formatted (`cargo fmt`)
 - No clippy warnings (`cargo clippy`)
 - Benchmarks show no performance regression
