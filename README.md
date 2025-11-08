@@ -27,8 +27,8 @@ This project uses a Rust workspace with multiple crates:
 
 - Rust (latest stable)
 - wasm-pack (`cargo install wasm-pack`)
-- **Bun.js** (required for WASM usage)
-- GPU with WebGPU support (for WASM usage) or Vulkan/Metal/DX12 (for native usage)
+- **Modern browser with WebGPU support** (Chrome/Edge 113+) for browser demos
+- GPU with WebGPU support (for browser usage) or Vulkan/Metal/DX12 (for native usage)
 
 ## Quick Start
 
@@ -45,20 +45,15 @@ npm run build:release
 ### 2. Run examples
 
 ```bash
-# Rust example
+# Rust example (native, works without WebGPU)
 cargo run --example basic
 
-# Bun.js examples (using npm scripts)
-npm run example              # Basic usage example
-npm run example:performance  # Performance comparison (GPU vs CPU)
-npm run example:variants     # All SHA-3 variants demo
-npm run examples             # Run performance demo (default)
-
-# Or run directly with Bun.js
-bun examples/node/basic.mjs
-bun examples/node/batch-performance.mjs
-bun examples/node/all-variants.mjs
+# Browser demo (requires WebGPU support in browser)
+npm run demo
+# Then open your browser to http://localhost:5173
 ```
+
+**Note:** The browser demo is required for testing WASM + WebGPU functionality because **Node.js and Bun.js don't support WebGPU**. Only modern browsers (Chrome/Edge 113+) have WebGPU support.
 
 ### 3. Run tests
 
@@ -79,19 +74,7 @@ npm run build                # Development build (targets web for Bun.js)
 npm run build:release        # Optimized release build (targets web for Bun.js)
 ```
 
-**Note:** The build commands use `--target web` which is appropriate for Bun.js. The generated WASM package works with Bun.js's Web API support.
-
-### Build for web browsers:
-
-```bash
-npm run build:web            # Same as build (targets web)
-```
-
-### Build for bundlers (webpack, vite, etc.):
-
-```bash
-npm run build:bundler
-```
+**Note:** The build commands use `--target web` which is appropriate for browsers. WebGPU is only available in browsers, not in Node.js or Bun.js.
 
 ## Usage
 
@@ -121,7 +104,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 ```
 
-### Bun.js
+### Browser (WebGPU)
 
 ```javascript
 import init, { Sha3WasmHasher } from './pkg/sha3_wasm.js';
@@ -135,7 +118,7 @@ const hasher = await new Sha3WasmHasher('sha3-256');
 // Single hash
 const input = new TextEncoder().encode('hello world');
 const hash = await hasher.hashSingle(input);
-console.log(Buffer.from(hash).toString('hex'));
+console.log(Array.from(hash).map(b => b.toString(16).padStart(2, '0')).join(''));
 
 // Batch hashing (optimal for GPU)
 const inputs = [
@@ -146,9 +129,11 @@ const inputs = [
 
 const hashes = await hasher.hashBatch(inputs);
 hashes.forEach((hash, i) => {
-  console.log(`Hash ${i}: ${Buffer.from(hash).toString('hex')}`);
+  console.log(`Hash ${i}:`, Array.from(hash).map(b => b.toString(16).padStart(2, '0')).join(''));
 });
 ```
+
+**Important:** This code only works in browsers with WebGPU support (Chrome/Edge 113+). Use the browser demo (`npm run demo`) to test the functionality.
 
 ## Performance
 
@@ -159,15 +144,13 @@ The GPU implementation is optimized for **batch processing**. Performance improv
 - **100+ hashes**: GPU significantly outperforms CPU
 - **1000+ hashes**: GPU can be 5-10x faster
 
-Run `cargo bench` to benchmark on your hardware, or try the Bun.js performance demo:
+Run `cargo bench` to benchmark on your hardware, or try the browser performance demo:
 
 ```bash
-npm run example:performance
-# or
-npm run examples
+npm run demo
 ```
 
-This will run a comprehensive performance comparison showing GPU vs CPU performance across different batch sizes (10, 50, 100, 500, 1000 hashes), displaying speedup ratios and throughput metrics.
+The browser demo includes an interactive performance comparison showing GPU vs CPU performance across different batch sizes (10, 50, 100, 500, 1000 hashes), displaying speedup ratios and throughput metrics.
 
 ## GPU Optimizations
 
@@ -205,11 +188,13 @@ This implementation includes several GPU-specific optimizations:
 │       └── src/main.rs             # Benchmark runner
 ├── examples/
 │   ├── basic.rs                    # Rust example
-│   └── node/                       # Bun.js examples
-│       ├── basic.mjs               # Basic usage
-│       ├── batch-performance.mjs   # Performance comparison
-│       ├── all-variants.mjs        # All SHA-3 variants
-│       └── README.md               # Bun.js examples documentation
+│   └── browser/                    # Browser demo (Vite + React)
+│       ├── src/
+│       │   ├── App.tsx             # Main app component
+│       │   ├── components/         # Demo components
+│       │   └── hooks/              # React hooks
+│       ├── package.json            # Browser demo dependencies
+│       └── README.md               # Browser demo documentation
 └── pkg/                            # Generated WASM package (gitignored)
 ```
 
@@ -277,22 +262,17 @@ The compute shader (`sha3.wgsl`) implements:
 
 ## Troubleshooting
 
-### Bun.js WASM Runtime Errors
+### WebGPU Not Supported
 
-If you encounter `RuntimeError: unreachable` when running Bun.js examples, this may be due to WebGPU initialization issues.
+**WebGPU is only available in modern browsers.** Node.js and Bun.js do not support WebGPU.
 
 **Solutions:**
-1. **Check Bun.js version**: Ensure you're using a recent version of Bun.js with WebGPU support
-   ```bash
-   bun --version
-   ```
-
-2. **Use native Rust**: For reliable GPU acceleration, use the native Rust API:
+1. **Use the browser demo**: Run `npm run demo` and open in Chrome/Edge 113+
+2. **Check browser support**: Visit [webgpu.io](https://webgpu.io) to verify WebGPU support
+3. **Use native Rust**: For non-browser GPU acceleration, use the native Rust API:
    ```bash
    cargo run --example basic
    ```
-
-3. **Check GPU availability**: Ensure your system has a compatible GPU with WebGPU support (Chrome/Edge browsers) or native drivers (Vulkan/Metal/DX12)
 
 ### GPU Initialization Failures
 
