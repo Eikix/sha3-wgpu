@@ -363,9 +363,8 @@ async fn test_hash_batch_large_batch() {
     let hasher = Sha3WasmHasher::new("sha3-256").await.unwrap();
 
     // Create 50 inputs
-    let inputs_vec: Vec<Vec<u8>> = (0..50)
-        .map(|i| format!("test input number {:03}", i).into_bytes())
-        .collect();
+    let inputs_vec: Vec<Vec<u8>> =
+        (0..50).map(|i| format!("test input number {:03}", i).into_bytes()).collect();
     let input_refs: Vec<&[u8]> = inputs_vec.iter().map(|v| v.as_slice()).collect();
     let inputs = to_js_array(&input_refs);
 
@@ -518,10 +517,7 @@ async fn test_sha3_256_empty_correctness() {
     let result = hasher.hash_single(&input).await.unwrap();
     let hash_hex = to_hex(&from_uint8_array(&result));
 
-    assert_eq!(
-        hash_hex,
-        "a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a"
-    );
+    assert_eq!(hash_hex, "a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a");
 }
 
 #[wasm_bindgen_test]
@@ -532,10 +528,7 @@ async fn test_sha3_256_abc_correctness() {
     let result = hasher.hash_single(&input).await.unwrap();
     let hash_hex = to_hex(&from_uint8_array(&result));
 
-    assert_eq!(
-        hash_hex,
-        "3a985da74fe225b2045c172d6bd390bd855f086e3e9d525b46bfe24511431532"
-    );
+    assert_eq!(hash_hex, "3a985da74fe225b2045c172d6bd390bd855f086e3e9d525b46bfe24511431532");
 }
 
 #[wasm_bindgen_test]
@@ -546,10 +539,7 @@ async fn test_sha3_224_abc_correctness() {
     let result = hasher.hash_single(&input).await.unwrap();
     let hash_hex = to_hex(&from_uint8_array(&result));
 
-    assert_eq!(
-        hash_hex,
-        "e642824c3f8cf24ad09234ee7d3c766fc9a3a5168d0c94ad73b46fdf"
-    );
+    assert_eq!(hash_hex, "e642824c3f8cf24ad09234ee7d3c766fc9a3a5168d0c94ad73b46fdf");
 }
 
 #[wasm_bindgen_test]
@@ -588,10 +578,7 @@ async fn test_sha3_256_long_message_correctness() {
     let result = hasher.hash_single(&input).await.unwrap();
     let hash_hex = to_hex(&from_uint8_array(&result));
 
-    assert_eq!(
-        hash_hex,
-        "41c0dba2a9d6240849100376a8235e2c82e1b9998a999e21db32dd97496d3376"
-    );
+    assert_eq!(hash_hex, "41c0dba2a9d6240849100376a8235e2c82e1b9998a999e21db32dd97496d3376");
 }
 
 #[wasm_bindgen_test]
@@ -604,14 +591,8 @@ async fn test_batch_correctness_multiple_known_vectors() {
     let hash0_hex = to_hex(&from_uint8_array(&Uint8Array::from(result.get(0))));
     let hash1_hex = to_hex(&from_uint8_array(&Uint8Array::from(result.get(1))));
 
-    assert_eq!(
-        hash0_hex,
-        "a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a"
-    );
-    assert_eq!(
-        hash1_hex,
-        "3a985da74fe225b2045c172d6bd390bd855f086e3e9d525b46bfe24511431532"
-    );
+    assert_eq!(hash0_hex, "a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a");
+    assert_eq!(hash1_hex, "3a985da74fe225b2045c172d6bd390bd855f086e3e9d525b46bfe24511431532");
 }
 
 #[wasm_bindgen_test]
@@ -621,10 +602,7 @@ async fn test_standalone_sha3_function_correctness() {
     let result = sha3("sha3-256", &input).await.unwrap();
     let hash_hex = to_hex(&from_uint8_array(&result));
 
-    assert_eq!(
-        hash_hex,
-        "3a985da74fe225b2045c172d6bd390bd855f086e3e9d525b46bfe24511431532"
-    );
+    assert_eq!(hash_hex, "3a985da74fe225b2045c172d6bd390bd855f086e3e9d525b46bfe24511431532");
 }
 
 #[wasm_bindgen_test]
@@ -636,14 +614,8 @@ async fn test_standalone_sha3_batch_correctness() {
     let hash0_hex = to_hex(&from_uint8_array(&Uint8Array::from(result.get(0))));
     let hash1_hex = to_hex(&from_uint8_array(&Uint8Array::from(result.get(1))));
 
-    assert_eq!(
-        hash0_hex,
-        "a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a"
-    );
-    assert_eq!(
-        hash1_hex,
-        "3a985da74fe225b2045c172d6bd390bd855f086e3e9d525b46bfe24511431532"
-    );
+    assert_eq!(hash0_hex, "a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a");
+    assert_eq!(hash1_hex, "3a985da74fe225b2045c172d6bd390bd855f086e3e9d525b46bfe24511431532");
 }
 
 // ============================================================================
@@ -725,12 +697,8 @@ async fn test_edge_case_different_output_sizes() {
     // Verify all variants produce correct output sizes
     let test_input = to_uint8_array(b"test");
 
-    let variants_and_sizes = [
-        ("sha3-224", 28),
-        ("sha3-256", 32),
-        ("sha3-384", 48),
-        ("sha3-512", 64),
-    ];
+    let variants_and_sizes =
+        [("sha3-224", 28), ("sha3-256", 32), ("sha3-384", 48), ("sha3-512", 64)];
 
     for (variant, expected_size) in variants_and_sizes.iter() {
         let hash = sha3(variant, &test_input).await.unwrap();
@@ -768,17 +736,11 @@ async fn test_reuse_hasher_multiple_times() {
     let hash2 = hasher.hash_single(&input2).await.unwrap();
 
     // Hashes should be different
-    assert_ne!(
-        from_uint8_array(&hash1),
-        from_uint8_array(&hash2)
-    );
+    assert_ne!(from_uint8_array(&hash1), from_uint8_array(&hash2));
 
     // Hashing same input again should produce same hash
     let hash1_again = hasher.hash_single(&input1).await.unwrap();
-    assert_eq!(
-        from_uint8_array(&hash1),
-        from_uint8_array(&hash1_again)
-    );
+    assert_eq!(from_uint8_array(&hash1), from_uint8_array(&hash1_again));
 }
 
 #[wasm_bindgen_test]
@@ -794,8 +756,5 @@ async fn test_different_hashers_independent() {
 
     assert_eq!(hash1.length(), 32);
     assert_eq!(hash2.length(), 64);
-    assert_ne!(
-        from_uint8_array(&hash1),
-        from_uint8_array(&hash2)[..32]
-    );
+    assert_ne!(from_uint8_array(&hash1), from_uint8_array(&hash2)[..32]);
 }
