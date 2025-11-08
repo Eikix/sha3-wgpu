@@ -1,0 +1,25 @@
+[package]
+name = "sha3-wasm"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "WASM bindings for GPU-accelerated SHA-3 library using WebGPU"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+sha3-core = { path = "../sha3-core" }
+sha3-wgpu = { path = "../sha3-wgpu" }
+wasm-bindgen.workspace = true
+wasm-bindgen-futures.workspace = true
+js-sys.workspace = true
+web-sys.workspace = true
+# wasm-bindgen-rayon is optional - requires WASM atomics support
+# Enable with: wasm-bindgen-rayon = { workspace = true }
+
+[dev-dependencies]
+wasm-bindgen-test = "0.3"
+

@@ -1,0 +1,12 @@
+[package]
+name = "sha3-wasm"
+version = "0.1.0"
+authors = ["Your Name <your.email@example.com>"]
+description = "GPU-accelerated SHA-3 library using WebGPU"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/yourusername/sha3-wgpu"
+
+[package.metadata.wasm-pack.profile.release]
+wasm-opt = ["-Os", "--enable-mutable-globals"]
+# Add "--enable-threads" if you enable wasm-bindgen-rayon
+

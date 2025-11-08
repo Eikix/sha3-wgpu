@@ -1,0 +1,20 @@
+[package]
+name = "sha3-bench"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[[bin]]
+name = "sha3_bench"
+path = "src/main.rs"
+
+[dependencies]
+sha3-core = { path = "../sha3-core" }
+sha3-wgpu = { path = "../sha3-wgpu" }
+criterion.workspace = true
+
+[dev-dependencies]
+criterion.workspace = true
+

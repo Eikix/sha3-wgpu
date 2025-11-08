@@ -1,0 +1,17 @@
+[build]
+target-dir = "target"
+
+[target.wasm32-unknown-unknown]
+runner = 'wasm-bindgen-test-runner'
+# Uncomment below if you need atomics support for wasm-bindgen-rayon
+# Note: This requires rebuilding the standard library with atomics
+# rustflags = [
+#     "-C", "target-feature=+atomics,+bulk-memory",
+# ]
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+panic = "abort"
+

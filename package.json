@@ -1,0 +1,52 @@
+{
+  "name": "sha3-wgpu",
+  "version": "0.1.0",
+  "description": "GPU-accelerated SHA-3 library using WebGPU",
+  "type": "module",
+  "main": "./pkg/sha3_wasm.js",
+  "types": "./pkg/sha3_wasm.d.ts",
+  "exports": {
+    ".": {
+      "import": "./pkg/sha3_wasm.js",
+      "require": "./pkg/sha3_wasm.js",
+      "types": "./pkg/sha3_wasm.d.ts"
+    }
+  },
+  "files": [
+    "pkg/**/*"
+  ],
+  "scripts": {
+    "build": "wasm-pack build --target nodejs --out-dir ../../pkg crates/sha3-wasm",
+    "build:web": "wasm-pack build --target web --out-dir ../../pkg-web crates/sha3-wasm",
+    "build:bundler": "wasm-pack build --target bundler --out-dir ../../pkg-bundler crates/sha3-wasm",
+    "build:release": "wasm-pack build --release --target nodejs --out-dir ../../pkg crates/sha3-wasm",
+    "build:threads": "RUSTFLAGS='-C target-feature=+atomics,+bulk-memory' wasm-pack build --target nodejs --out-dir ../../pkg crates/sha3-wasm",
+    "test": "cargo test",
+    "test:wasm": "wasm-pack test --headless --firefox",
+    "bench": "cargo bench",
+    "clean": "cargo clean && rm -rf pkg pkg-web pkg-bundler node_modules"
+  },
+  "keywords": [
+    "sha3",
+    "webgpu",
+    "wgpu",
+    "wasm",
+    "gpu",
+    "crypto",
+    "hash"
+  ],
+  "author": "Your Name <your.email@example.com>",
+  "license": "MIT OR Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/sha3-wgpu"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  }
+}
+

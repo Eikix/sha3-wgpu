@@ -1,0 +1,39 @@
+# Rust
+/target/
+**/*.rs.bk
+Cargo.lock
+
+# WASM build outputs
+/pkg/
+/pkg-web/
+/pkg-bundler/
+*.wasm
+
+# Node
+node_modules/
+package-lock.json
+yarn.lock
+bun.lockb
+dist/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Test outputs
+/coverage/
+
+# Environment
+.env
+.env.local
+
