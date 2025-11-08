@@ -21,8 +21,9 @@ impl GpuContext {
         required_features: Option<Features>,
     ) -> Result<Self, GpuSha3Error> {
         // Create wgpu instance
-        let instance =
-            Instance::new(InstanceDescriptor { backends: Backends::all(), ..Default::default() });
+        let instance_descriptor =
+            InstanceDescriptor { backends: Backends::all(), ..Default::default() };
+        let instance = Instance::new(&instance_descriptor);
 
         // Allow fallback adapter in CI environments (e.g., GitHub Actions without GPU)
         let force_fallback = std::env::var("WGPU_FORCE_FALLBACK_ADAPTER")
@@ -37,14 +38,35 @@ impl GpuContext {
                 compatible_surface: None,
             })
             .await
-            .ok_or_else(|| GpuSha3Error::GpuError("Failed to find GPU adapter".to_string()))?;
+            .map_err(|e| GpuSha3Error::GpuError(format!("Failed to find GPU adapter: {e}")))?;
 
         let adapter_info = adapter.get_info();
 
-        // Get adapter's supported limits (these are the maximums the adapter supports)
-        // Using adapter limits directly avoids requesting unsupported limits like maxInterStageShaderComponents
-        // that might be in Default::default() but not supported by the browser's WebGPU implementation
-        let limits = adapter.limits();
+        // Start with downlevel defaults which should be browser-compatible
+        // Then override only the specific limits we need from the adapter
+        // This avoids including max_inter_stage_shader_components which browsers don't recognize
+        let adapter_limits = adapter.limits();
+        let mut limits = Limits::downlevel_defaults();
+
+        // Override with adapter limits for fields we actually use, clamped to reasonable maximums
+        limits.max_buffer_size = adapter_limits.max_buffer_size.min(1 << 30); // Up to 1GB
+        limits.max_storage_buffer_binding_size =
+            adapter_limits.max_storage_buffer_binding_size.min(1 << 30);
+        limits.max_compute_workgroup_storage_size =
+            adapter_limits.max_compute_workgroup_storage_size.min(16384);
+        limits.max_compute_invocations_per_workgroup =
+            adapter_limits.max_compute_invocations_per_workgroup.min(256);
+        limits.max_compute_workgroup_size_x = adapter_limits.max_compute_workgroup_size_x.min(256);
+        limits.max_compute_workgroup_size_y = adapter_limits.max_compute_workgroup_size_y;
+        limits.max_compute_workgroup_size_z = adapter_limits.max_compute_workgroup_size_z;
+        limits.max_compute_workgroups_per_dimension =
+            adapter_limits.max_compute_workgroups_per_dimension;
+        limits.max_bind_groups = adapter_limits.max_bind_groups;
+        limits.max_storage_buffers_per_shader_stage =
+            adapter_limits.max_storage_buffers_per_shader_stage;
+        limits.max_uniform_buffers_per_shader_stage =
+            adapter_limits.max_uniform_buffers_per_shader_stage;
+        limits.max_uniform_buffer_binding_size = adapter_limits.max_uniform_buffer_binding_size;
 
         // Check what features the adapter supports
         let adapter_features = adapter.features();
@@ -60,14 +82,14 @@ impl GpuContext {
 
         // Request device and queue
         let (device, queue) = adapter
-            .request_device(
-                &DeviceDescriptor {
-                    label: Some("SHA-3 GPU Device"),
-                    required_features: features,
-                    required_limits: limits,
-                },
-                None,
-            )
+            .request_device(&DeviceDescriptor {
+                label: Some("SHA-3 GPU Device"),
+                required_features: features,
+                required_limits: limits,
+                experimental_features: ExperimentalFeatures::disabled(),
+                memory_hints: Default::default(),
+                trace: Trace::Off,
+            })
             .await
             .map_err(|e| GpuSha3Error::GpuError(format!("Failed to create device: {e}")))?;
 

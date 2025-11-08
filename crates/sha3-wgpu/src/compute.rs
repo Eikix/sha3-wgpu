@@ -3,6 +3,7 @@
 use sha3_core::{BatchHashParams, Sha3Variant};
 use wgpu::util::DeviceExt;
 use wgpu::*;
+use futures::channel::oneshot;
 
 use crate::{context::GpuContext, error::GpuSha3Error};
 
@@ -94,8 +95,9 @@ impl GpuSha3Hasher {
             label: Some("SHA-3 Compute Pipeline"),
             layout: Some(&pipeline_layout),
             module: &shader,
-            entry_point: "main",
+            entry_point: Some("main"),
             compilation_options: Default::default(),
+            cache: None,
         });
 
         Ok(Self { context, variant, pipeline, bind_group_layout })
@@ -234,19 +236,20 @@ impl GpuSha3Hasher {
         );
 
         // Submit commands
+        // The copy_buffer_to_buffer operation ensures compute finishes before copying
         queue.submit(Some(encoder.finish()));
 
         // Read results from staging buffer
+        // Buffer mapping will wait for the copy operation to complete
         let buffer_slice = staging_buffer.slice(..);
-        let (sender, receiver) = futures::channel::oneshot::channel();
+        let (sender, receiver) = oneshot::channel();
 
         buffer_slice.map_async(MapMode::Read, move |result| {
             sender.send(result).unwrap();
         });
 
-        // Poll device until mapping is complete
-        device.poll(Maintain::Wait);
-
+        // In WASM, wasm-bindgen-futures will poll the device automatically
+        // Wait for the mapping callback to fire
         receiver
             .await
             .map_err(|_| GpuSha3Error::GpuError("Failed to receive buffer mapping result".into()))?

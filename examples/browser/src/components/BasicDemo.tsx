@@ -7,7 +7,7 @@ function BasicDemo() {
   const [output, setOutput] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const { hasher, error: hasherError } = useHasher('sha3-256');
+  const { hasher, error: hasherError, loading: hasherLoading } = useHasher('sha3-256');
 
   const handleSingleHash = async () => {
     if (!hasher) return;
@@ -73,10 +73,28 @@ function BasicDemo() {
     );
   }
 
+  if (hasherLoading) {
+    return (
+      <div>
+        <h2>Basic Usage</h2>
+        <p>Demonstrate single hash and batch hashing using GPU-accelerated SHA-3.</p>
+        <div className="output">
+          <div className="output-line info">Initializing GPU hasher... Please wait.</div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div>
       <h2>Basic Usage</h2>
       <p>Demonstrate single hash and batch hashing using GPU-accelerated SHA-3.</p>
+      
+      {!hasher && !hasherLoading && !hasherError && (
+        <div className="output">
+          <div className="output-line error">Hasher not initialized. Please check the browser console for errors.</div>
+        </div>
+      )}
 
       <div className="controls">
         <div className="control-group">

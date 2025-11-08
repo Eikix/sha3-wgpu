@@ -20,7 +20,7 @@ bytemuck = "1.14"
 thiserror = "1.0"
 
 # WebGPU
-wgpu = "0.20"
+wgpu = "27"
 pollster = "0.3"
 
 # WASM
