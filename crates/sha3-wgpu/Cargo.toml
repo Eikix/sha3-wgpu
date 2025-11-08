@@ -13,4 +13,10 @@ wgpu.workspace = true
 pollster.workspace = true
 bytemuck.workspace = true
 thiserror.workspace = true
+futures = "0.3"
+
+[dev-dependencies]
+sha3.workspace = true
+hex.workspace = true
+tokio.workspace = true
 
