@@ -38,6 +38,10 @@ criterion = "0.5"
 # Async runtime
 tokio = { version = "1.35", features = ["full"] }
 
+# CPU reference implementation for testing
+sha3 = "0.10"
+hex = "0.4"
+
 [profile.release]
 opt-level = 3
 lto = true
