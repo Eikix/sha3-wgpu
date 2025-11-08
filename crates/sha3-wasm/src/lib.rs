@@ -40,12 +40,7 @@ impl Sha3WasmHasher {
     /// ```javascript
     /// const hasher = await Sha3WasmHasher.new("sha3-256");
     /// ```
-    #[wasm_bindgen(constructor)]
     pub async fn new(variant: &str) -> Result<Sha3WasmHasher, JsValue> {
-        // Initialize console panic hook for better error messages
-        #[cfg(feature = "console_error_panic_hook")]
-        console_error_panic_hook::set_once();
-
         let variant_enum = parse_variant(variant)?;
 
         // Create GPU context
@@ -57,10 +52,7 @@ impl Sha3WasmHasher {
         let hasher = GpuSha3Hasher::new(context, variant_enum)
             .map_err(|e| JsValue::from_str(&format!("Failed to create hasher: {}", e)))?;
 
-        Ok(Self {
-            hasher,
-            variant: variant_enum,
-        })
+        Ok(Self { hasher, variant: variant_enum })
     }
 
     /// Hash a single input

@@ -13,4 +13,3 @@ fn bench_sha3(c: &mut Criterion) {
 
 criterion_group!(benches, bench_sha3);
 criterion_main!(benches);
-
