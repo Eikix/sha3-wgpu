@@ -24,11 +24,16 @@ impl GpuContext {
         let instance =
             Instance::new(InstanceDescriptor { backends: Backends::all(), ..Default::default() });
 
-        // Request adapter (GPU)
+        // Allow fallback adapter in CI environments (e.g., GitHub Actions without GPU)
+        let force_fallback = std::env::var("WGPU_FORCE_FALLBACK_ADAPTER")
+            .map(|v| v == "1" || v.to_lowercase() == "true")
+            .unwrap_or(false);
+
+        // Request adapter (GPU or fallback)
         let adapter = instance
             .request_adapter(&RequestAdapterOptions {
                 power_preference: PowerPreference::HighPerformance,
-                force_fallback_adapter: false,
+                force_fallback_adapter: force_fallback,
                 compatible_surface: None,
             })
             .await
@@ -47,11 +52,17 @@ impl GpuContext {
             ..Default::default()
         };
 
-        let features = required_features.unwrap_or({
+        // Check what features the adapter supports
+        let adapter_features = adapter.features();
+        let desired_features = required_features.unwrap_or({
             // Request features needed for SHA-3 compute shader
             // SHADER_INT64 is required for u64 operations in the shader
             Features::SHADER_INT64
         });
+
+        // Only request features that the adapter actually supports
+        // This is important for fallback adapters which may not support all features
+        let features = desired_features & adapter_features;
 
         // Request device and queue
         let (device, queue) = adapter
