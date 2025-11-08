@@ -16,8 +16,7 @@ fn parse_variant(variant: &str) -> Result<Sha3Variant, JsValue> {
         "shake128" => Ok(Sha3Variant::Shake128),
         "shake256" => Ok(Sha3Variant::Shake256),
         _ => Err(JsValue::from_str(&format!(
-            "Invalid SHA-3 variant: {}. Valid options: sha3-224, sha3-256, sha3-384, sha3-512, shake128, shake256",
-            variant
+            "Invalid SHA-3 variant: {variant}. Valid options: sha3-224, sha3-256, sha3-384, sha3-512, shake128, shake256"
         ))),
     }
 }
@@ -40,6 +39,7 @@ impl Sha3WasmHasher {
     /// ```javascript
     /// const hasher = await Sha3WasmHasher.new("sha3-256");
     /// ```
+    #[allow(unexpected_cfgs, deprecated)]
     #[wasm_bindgen(constructor)]
     pub async fn new(variant: &str) -> Result<Sha3WasmHasher, JsValue> {
         // Initialize console panic hook for better error messages
@@ -51,16 +51,13 @@ impl Sha3WasmHasher {
         // Create GPU context
         let context = GpuContext::new()
             .await
-            .map_err(|e| JsValue::from_str(&format!("Failed to initialize GPU: {}", e)))?;
+            .map_err(|e| JsValue::from_str(&format!("Failed to initialize GPU: {e}")))?;
 
         // Create hasher
         let hasher = GpuSha3Hasher::new(context, variant_enum)
-            .map_err(|e| JsValue::from_str(&format!("Failed to create hasher: {}", e)))?;
+            .map_err(|e| JsValue::from_str(&format!("Failed to create hasher: {e}")))?;
 
-        Ok(Self {
-            hasher,
-            variant: variant_enum,
-        })
+        Ok(Self { hasher, variant: variant_enum })
     }
 
     /// Hash a single input
@@ -86,7 +83,7 @@ impl Sha3WasmHasher {
             .hasher
             .hash_batch(&inputs)
             .await
-            .map_err(|e| JsValue::from_str(&format!("Hashing failed: {}", e)))?;
+            .map_err(|e| JsValue::from_str(&format!("Hashing failed: {e}")))?;
 
         Ok(Uint8Array::from(&result[..]))
     }
@@ -134,7 +131,7 @@ impl Sha3WasmHasher {
             .hasher
             .hash_batch(&input_refs)
             .await
-            .map_err(|e| JsValue::from_str(&format!("Batch hashing failed: {}", e)))?;
+            .map_err(|e| JsValue::from_str(&format!("Batch hashing failed: {e}")))?;
 
         // Split result into individual hashes
         let output_size = self.variant.output_bytes();
@@ -193,7 +190,7 @@ impl Sha3WasmHasher {
             .hasher
             .hash_batch_with_params(&input_refs, &params)
             .await
-            .map_err(|e| JsValue::from_str(&format!("Batch hashing failed: {}", e)))?;
+            .map_err(|e| JsValue::from_str(&format!("Batch hashing failed: {e}")))?;
 
         // Split result into individual hashes
         let result_array = Array::new();

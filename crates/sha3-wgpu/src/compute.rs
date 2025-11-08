@@ -1,8 +1,8 @@
 //! GPU compute pipeline for SHA-3 batch hashing
 
 use sha3_core::{BatchHashParams, Sha3Variant};
-use wgpu::*;
 use wgpu::util::DeviceExt;
+use wgpu::*;
 
 use crate::{context::GpuContext, error::GpuSha3Error};
 
@@ -98,12 +98,7 @@ impl GpuSha3Hasher {
             compilation_options: Default::default(),
         });
 
-        Ok(Self {
-            context,
-            variant,
-            pipeline,
-            bind_group_layout,
-        })
+        Ok(Self { context, variant, pipeline, bind_group_layout })
     }
 
     /// Hash a batch of inputs (all must be the same length)
@@ -195,18 +190,9 @@ impl GpuSha3Hasher {
             label: Some("SHA-3 Bind Group"),
             layout: &self.bind_group_layout,
             entries: &[
-                BindGroupEntry {
-                    binding: 0,
-                    resource: input_buffer.as_entire_binding(),
-                },
-                BindGroupEntry {
-                    binding: 1,
-                    resource: output_buffer.as_entire_binding(),
-                },
-                BindGroupEntry {
-                    binding: 2,
-                    resource: uniform_buffer.as_entire_binding(),
-                },
+                BindGroupEntry { binding: 0, resource: input_buffer.as_entire_binding() },
+                BindGroupEntry { binding: 1, resource: output_buffer.as_entire_binding() },
+                BindGroupEntry { binding: 2, resource: uniform_buffer.as_entire_binding() },
             ],
         });
 
@@ -256,7 +242,7 @@ impl GpuSha3Hasher {
         receiver
             .await
             .map_err(|_| GpuSha3Error::GpuError("Failed to receive buffer mapping result".into()))?
-            .map_err(|e| GpuSha3Error::GpuError(format!("Buffer mapping failed: {:?}", e)))?;
+            .map_err(|e| GpuSha3Error::GpuError(format!("Buffer mapping failed: {e:?}")))?;
 
         // Extract output data
         let data = buffer_slice.get_mapped_range();

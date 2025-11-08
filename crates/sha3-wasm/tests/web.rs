@@ -9,4 +9,3 @@ fn test_sha3_wasm() {
     // TODO: Add WASM-specific tests
     assert!(true);
 }
-
