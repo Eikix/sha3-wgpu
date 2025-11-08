@@ -41,16 +41,10 @@ impl GpuContext {
 
         let adapter_info = adapter.get_info();
 
-        // Get adapter limits and features
-        // Increase buffer size limits for batch processing
-        let limits = Limits {
-            max_buffer_size: 1 << 30, // 1GB max buffer
-            max_storage_buffer_binding_size: 1 << 30,
-            max_compute_workgroup_storage_size: 16384,
-            max_compute_invocations_per_workgroup: 256,
-            max_compute_workgroup_size_x: 256,
-            ..Default::default()
-        };
+        // Get adapter's supported limits (these are the maximums the adapter supports)
+        // Using adapter limits directly avoids requesting unsupported limits like maxInterStageShaderComponents
+        // that might be in Default::default() but not supported by the browser's WebGPU implementation
+        let limits = adapter.limits();
 
         // Check what features the adapter supports
         let adapter_features = adapter.features();
