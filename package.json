@@ -24,11 +24,9 @@
     "test": "cargo test",
     "test:wasm": "wasm-pack test --headless --firefox",
     "bench": "cargo bench",
-    "clean": "cargo clean && rm -rf pkg pkg-web pkg-bundler node_modules",
-    "example": "bun examples/node/basic.mjs",
-    "example:performance": "bun examples/node/batch-performance.mjs",
-    "example:variants": "bun examples/node/all-variants.mjs",
-    "examples": "npm run example:performance"
+    "clean": "cargo clean && rm -rf pkg pkg-web pkg-bundler node_modules examples/browser/node_modules examples/browser/dist",
+    "demo": "npm run build && cd examples/browser && npm install && npm run dev",
+    "demo:build": "npm run build && cd examples/browser && npm install && npm run build"
   },
   "keywords": [
     "sha3",
@@ -46,7 +44,7 @@
     "url": "https://github.com/yourusername/sha3-wgpu"
   },
   "engines": {
-    "bun": ">=1.0.0"
+    "node": ">=18.0.0"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
