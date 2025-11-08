@@ -61,32 +61,15 @@ fn get_rc(round: u32) -> u64 {
 }
 
 // Helper functions to get indices/offsets (WGSL doesn't allow dynamic indexing of const arrays)
+// Pi permutation: (x,y) -> (y, 2x+3y mod 5)
+// State is stored as state[x + 5*y] for position (x,y)
+// For i = x + 5*y, pi maps to: y + 5*((2x+3y) mod 5)
 fn get_pi_index(i: u32) -> u32 {
-    if (i == 0u) { return 0u; }
-    else if (i == 1u) { return 6u; }
-    else if (i == 2u) { return 12u; }
-    else if (i == 3u) { return 18u; }
-    else if (i == 4u) { return 24u; }
-    else if (i == 5u) { return 3u; }
-    else if (i == 6u) { return 9u; }
-    else if (i == 7u) { return 15u; }
-    else if (i == 8u) { return 21u; }
-    else if (i == 9u) { return 2u; }
-    else if (i == 10u) { return 1u; }
-    else if (i == 11u) { return 7u; }
-    else if (i == 12u) { return 13u; }
-    else if (i == 13u) { return 19u; }
-    else if (i == 14u) { return 20u; }
-    else if (i == 15u) { return 4u; }
-    else if (i == 16u) { return 5u; }
-    else if (i == 17u) { return 11u; }
-    else if (i == 18u) { return 17u; }
-    else if (i == 19u) { return 23u; }
-    else if (i == 20u) { return 2u; }
-    else if (i == 21u) { return 8u; }
-    else if (i == 22u) { return 14u; }
-    else if (i == 23u) { return 15u; }
-    else { return 16u; } // i == 24u
+    let x = i % 5u;
+    let y = i / 5u;
+    let x_new = y;
+    let y_new = (2u * x + 3u * y) % 5u;
+    return x_new + 5u * y_new;
 }
 
 fn get_rho_offset(j: u32) -> u32 {
@@ -181,12 +164,18 @@ fn keccak_f1600(state: ptr<function, array<u64, 25>>) {
         }
 
         // ρ (rho) and π (pi) steps: Rotate and permute
-        t = (*state)[1];
-        for (var i = 0u; i < 24u; i = i + 1u) {
-            let j = get_pi_index(i);
-            bc[0] = (*state)[j];
-            (*state)[j] = rotl64(t, get_rho_offset(j));
-            t = bc[0];
+        // Standard Keccak: for each lane at (x,y), rotate by rho_offset(x,y) and place at pi(x,y)
+        // State is stored as state[x + 5*y] for position (x,y)
+        // Pi maps (x,y) -> (y, 2x+3y mod 5)
+        // We need to rotate by the offset of the ORIGINAL position, not the destination
+        var temp_state: array<u64, 25>;
+        for (var i = 0u; i < 25u; i = i + 1u) {
+            temp_state[i] = (*state)[i];
+        }
+        
+        for (var i = 0u; i < 25u; i = i + 1u) {
+            let j = get_pi_index(i);  // Destination position after pi permutation
+            (*state)[j] = rotl64(temp_state[i], get_rho_offset(i));  // Rotate by original position's offset
         }
 
         // χ (chi) step: Non-linear mixing
@@ -207,7 +196,7 @@ fn keccak_f1600(state: ptr<function, array<u64, 25>>) {
 // SHA-3 padding (pad10*1)
 // Note: Using u32 instead of u8 since WGSL doesn't support u8
 fn apply_padding(
-    input_data: ptr<function, array<u32, 2048>>,  // Max input size per hash
+    input_data: ptr<function, array<u32, 16384>>,  // Max input size per hash (16KB)
     input_len: u32,
     rate_bytes: u32
 ) -> u32 {
@@ -248,7 +237,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Load input data for this hash
     // Note: Using u32 instead of u8 since WGSL doesn't support u8
-    var input_buffer: array<u32, 2048>;  // Max 2KB per input
+    var input_buffer: array<u32, 16384>;  // Max 16KB per input
     let input_offset = hash_idx * params.input_length;
 
     for (var i = 0u; i < params.input_length; i = i + 1u) {
@@ -286,12 +275,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     while (extracted < params.output_bytes) {
         let to_extract = min(params.output_bytes - extracted, params.rate_bytes);
+        let lanes_to_extract = (to_extract + 7u) / 8u;  // Round up to include partial lanes
 
-        for (var i = 0u; i < to_extract / 8u; i = i + 1u) {
+        for (var i = 0u; i < lanes_to_extract; i = i + 1u) {
             var lane_bytes: array<u32, 8>;
             u64_to_bytes(state[i], &lane_bytes);
 
-            for (var j = 0u; j < 8u; j = j + 1u) {
+            // Extract bytes from this lane, but don't exceed to_extract
+            let bytes_in_this_lane = min(8u, to_extract - i * 8u);
+            for (var j = 0u; j < bytes_in_this_lane; j = j + 1u) {
                 let byte_pos = output_offset + extracted + i * 8u + j;
                 let word_idx = byte_pos / 4u;
                 let byte_in_word = byte_pos % 4u;

@@ -101,8 +101,9 @@ mod tests {
 
     #[tokio::test]
     async fn test_sha3_256_large_batch() {
+        // Ensure all inputs have the same length by using fixed-width formatting
         let data: Vec<Vec<u8>> =
-            (0..100).map(|i| format!("test input number {}", i).into_bytes()).collect();
+            (0..100).map(|i| format!("test input number {:03}", i).into_bytes()).collect();
         let inputs: Vec<&[u8]> = data.iter().map(|v| v.as_slice()).collect();
 
         test_variant_against_reference(Sha3Variant::Sha3_256, &inputs).await.unwrap();

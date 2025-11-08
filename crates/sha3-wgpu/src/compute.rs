@@ -139,12 +139,20 @@ impl GpuSha3Hasher {
             output_bytes: params.get_output_bytes() as u32,
         };
 
-        // Calculate buffer sizes (pad to 4-byte alignment for u32 storage)
+        // Calculate buffer sizes (pad to 16-byte alignment to match WGSL struct alignment)
         let total_input_bytes = params.num_hashes * params.input_length;
-        let input_buffer_size = ((total_input_bytes + 3) / 4) * 4; // Align to u32
+        let input_buffer_size = if total_input_bytes == 0 {
+            16 // Minimum size for empty input (16-byte alignment)
+        } else {
+            ((total_input_bytes + 15) / 16) * 16 // Align to 16 bytes
+        };
 
         let total_output_bytes = params.num_hashes * params.get_output_bytes();
-        let output_buffer_size = ((total_output_bytes + 3) / 4) * 4; // Align to u32
+        let output_buffer_size = if total_output_bytes == 0 {
+            16 // Minimum size for empty output (16-byte alignment)
+        } else {
+            ((total_output_bytes + 15) / 16) * 16 // Align to 16 bytes
+        };
 
         // Create input buffer and copy data
         let input_buffer = device.create_buffer(&BufferDescriptor {
