@@ -79,9 +79,21 @@ impl Sha3WasmHasher {
         let input_bytes = input.to_vec();
         let inputs = vec![input_bytes.as_slice()];
 
+        let params = match self.variant {
+            Sha3Variant::Shake128 => {
+                BatchHashParams::new(self.variant, inputs.len(), input_bytes.len())
+                    .with_output_length(16)
+            }
+            Sha3Variant::Shake256 => {
+                BatchHashParams::new(self.variant, inputs.len(), input_bytes.len())
+                    .with_output_length(32)
+            }
+            _ => BatchHashParams::new(self.variant, inputs.len(), input_bytes.len()),
+        };
+
         let result = self
             .hasher
-            .hash_batch(&inputs)
+            .hash_batch_with_params(&inputs, &params)
             .await
             .map_err(|e| JsValue::from_str(&format!("Hashing failed: {e}")))?;
 

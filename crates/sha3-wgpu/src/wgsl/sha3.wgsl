@@ -1,63 +1,28 @@
 // WGSL compute shader for GPU-accelerated SHA-3 (Keccak-f[1600])
 // Optimized for batch processing with proper memory alignment
+// Note: WebGPU doesn't support u64, so we use vec2<u32> for 64-bit operations (high, low)
 
-// Keccak round constants for iota step
-// Note: WGSL doesn't support large u64 literals directly, so we store high/low u32 parts separately
-// and combine them at runtime
 const KECCAK_ROUNDS: u32 = 24u;
 
-// Round constants stored as high and low u32 parts
-const RC_HIGH: array<u32, 24> = array<u32, 24>(
-    0x00000000u, 0x00000000u, 0x80000000u, 0x80000000u,
-    0x00000000u, 0x00000000u, 0x80000000u, 0x80000000u,
-    0x00000000u, 0x00000000u, 0x00000000u, 0x00000000u,
-    0x00000000u, 0x80000000u, 0x80000000u, 0x80000000u,
-    0x80000000u, 0x80000000u, 0x00000000u, 0x80000000u,
-    0x80000000u, 0x80000000u, 0x00000000u, 0x80000000u
+// Round constants stored as (high, low) u32 pairs
+const RC: array<vec2<u32>, 24> = array<vec2<u32>, 24>(
+    vec2<u32>(0x00000000u, 0x00000001u), vec2<u32>(0x00000000u, 0x00008082u),
+    vec2<u32>(0x80000000u, 0x0000808Au), vec2<u32>(0x80000000u, 0x80008000u),
+    vec2<u32>(0x00000000u, 0x0000808Bu), vec2<u32>(0x00000000u, 0x80000001u),
+    vec2<u32>(0x80000000u, 0x80008081u), vec2<u32>(0x80000000u, 0x00008009u),
+    vec2<u32>(0x00000000u, 0x0000008Au), vec2<u32>(0x00000000u, 0x00000088u),
+    vec2<u32>(0x00000000u, 0x80008009u), vec2<u32>(0x00000000u, 0x8000000Au),
+    vec2<u32>(0x00000000u, 0x8000808Bu), vec2<u32>(0x80000000u, 0x0000008Bu),
+    vec2<u32>(0x80000000u, 0x00008089u), vec2<u32>(0x80000000u, 0x00008003u),
+    vec2<u32>(0x80000000u, 0x00008002u), vec2<u32>(0x80000000u, 0x00000080u),
+    vec2<u32>(0x00000000u, 0x0000800Au), vec2<u32>(0x80000000u, 0x8000000Au),
+    vec2<u32>(0x80000000u, 0x80008081u), vec2<u32>(0x80000000u, 0x00008080u),
+    vec2<u32>(0x00000000u, 0x80000001u), vec2<u32>(0x80000000u, 0x80008008u)
 );
 
-const RC_LOW: array<u32, 24> = array<u32, 24>(
-    0x00000001u, 0x00008082u, 0x0000808Au, 0x80008000u,
-    0x0000808Bu, 0x80000001u, 0x80008081u, 0x00008009u,
-    0x0000008Au, 0x00000088u, 0x80008009u, 0x8000000Au,
-    0x8000808Bu, 0x0000008Bu, 0x00008089u, 0x00008003u,
-    0x00008002u, 0x00000080u, 0x0000800Au, 0x8000000Au,
-    0x80008081u, 0x00008080u, 0x80000001u, 0x80008008u
-);
-
-// Helper function to get round constant by combining high and low parts
-// Note: WGSL doesn't allow dynamic indexing of const arrays, so we use if-else chain
-fn get_rc(round: u32) -> u64 {
-    // Round constants stored as (high, low) u32 pairs
-    var high: u32;
-    var low: u32;
-    
-    if (round == 0u) { high = 0x00000000u; low = 0x00000001u; }
-    else if (round == 1u) { high = 0x00000000u; low = 0x00008082u; }
-    else if (round == 2u) { high = 0x80000000u; low = 0x0000808Au; }
-    else if (round == 3u) { high = 0x80000000u; low = 0x80008000u; }
-    else if (round == 4u) { high = 0x00000000u; low = 0x0000808Bu; }
-    else if (round == 5u) { high = 0x00000000u; low = 0x80000001u; }
-    else if (round == 6u) { high = 0x80000000u; low = 0x80008081u; }
-    else if (round == 7u) { high = 0x80000000u; low = 0x00008009u; }
-    else if (round == 8u) { high = 0x00000000u; low = 0x0000008Au; }
-    else if (round == 9u) { high = 0x00000000u; low = 0x00000088u; }
-    else if (round == 10u) { high = 0x00000000u; low = 0x80008009u; }
-    else if (round == 11u) { high = 0x00000000u; low = 0x8000000Au; }
-    else if (round == 12u) { high = 0x00000000u; low = 0x8000808Bu; }
-    else if (round == 13u) { high = 0x80000000u; low = 0x0000008Bu; }
-    else if (round == 14u) { high = 0x80000000u; low = 0x00008089u; }
-    else if (round == 15u) { high = 0x80000000u; low = 0x00008003u; }
-    else if (round == 16u) { high = 0x80000000u; low = 0x00008002u; }
-    else if (round == 17u) { high = 0x80000000u; low = 0x00000080u; }
-    else if (round == 18u) { high = 0x00000000u; low = 0x0000800Au; }
-    else if (round == 19u) { high = 0x80000000u; low = 0x8000000Au; }
-    else if (round == 20u) { high = 0x80000000u; low = 0x80008081u; }
-    else if (round == 21u) { high = 0x80000000u; low = 0x00008080u; }
-    else if (round == 22u) { high = 0x00000000u; low = 0x80000001u; }
-    else { high = 0x80000000u; low = 0x80008008u; } // round == 23u
-    
-    return (u64(high) << 32u) | u64(low);
+// Helper function to get round constant
+fn get_rc(round: u32) -> vec2<u32> {
+    return RC[round];
 }
 
 // Helper functions to get indices/offsets (WGSL doesn't allow dynamic indexing of const arrays)
@@ -72,32 +37,14 @@ fn get_pi_index(i: u32) -> u32 {
     return x_new + 5u * y_new;
 }
 
+// ρ (rho) offsets for each lane position
 fn get_rho_offset(j: u32) -> u32 {
-    if (j == 0u) { return 0u; }
-    else if (j == 1u) { return 1u; }
-    else if (j == 2u) { return 62u; }
-    else if (j == 3u) { return 28u; }
-    else if (j == 4u) { return 27u; }
-    else if (j == 5u) { return 36u; }
-    else if (j == 6u) { return 44u; }
-    else if (j == 7u) { return 6u; }
-    else if (j == 8u) { return 55u; }
-    else if (j == 9u) { return 20u; }
-    else if (j == 10u) { return 3u; }
-    else if (j == 11u) { return 10u; }
-    else if (j == 12u) { return 43u; }
-    else if (j == 13u) { return 25u; }
-    else if (j == 14u) { return 39u; }
-    else if (j == 15u) { return 41u; }
-    else if (j == 16u) { return 45u; }
-    else if (j == 17u) { return 15u; }
-    else if (j == 18u) { return 21u; }
-    else if (j == 19u) { return 8u; }
-    else if (j == 20u) { return 18u; }
-    else if (j == 21u) { return 2u; }
-    else if (j == 22u) { return 61u; }
-    else if (j == 23u) { return 56u; }
-    else { return 14u; } // j == 24u
+    let offsets = array<u32, 25>(
+        0u, 1u, 62u, 28u, 27u, 36u, 44u, 6u, 55u, 20u,
+        3u, 10u, 43u, 25u, 39u, 41u, 45u, 15u, 21u, 8u,
+        18u, 2u, 61u, 56u, 14u
+    );
+    return offsets[j];
 }
 
 // Input/output buffer structure
@@ -121,45 +68,99 @@ struct HashParams {
 @group(0) @binding(1) var<storage, read_write> outputs: HashOutput;
 @group(0) @binding(2) var<uniform> params: HashParams;
 
-// Helper: Rotate left for 64-bit values (WGSL doesn't have native u64 rotl)
-fn rotl64(x: u64, n: u32) -> u64 {
-    return (x << n) | (x >> (64u - n));
+// Helper: XOR two 64-bit values (represented as vec2<u32>)
+fn xor_u64(a: vec2<u32>, b: vec2<u32>) -> vec2<u32> {
+    return vec2<u32>(a.x ^ b.x, a.y ^ b.y);
+}
+
+// Helper: Rotate left for 64-bit values (represented as vec2<u32>)
+fn rotl_u64(x: vec2<u32>, n: u32) -> vec2<u32> {
+    if (n == 0u) {
+        return x;
+    }
+
+    let total_shift = n % 64u;
+    if (total_shift == 0u) {
+        return x;
+    }
+
+    if (total_shift < 32u) {
+        // Shift within 32-bit boundaries
+        let low_shift = total_shift;
+        let high_shift = 32u - total_shift;
+
+        let new_low = (x.y << low_shift) | (x.x >> high_shift);
+        let new_high = (x.x << low_shift) | (x.y >> high_shift);
+
+        return vec2<u32>(new_high, new_low);
+    } else {
+        // Shift crosses 32-bit boundary
+        let low_shift = total_shift - 32u;
+        let high_shift = 32u - low_shift;
+
+        let new_low = (x.x << low_shift) | (x.y >> high_shift);
+        let new_high = (x.y << low_shift) | (x.x >> high_shift);
+
+        return vec2<u32>(new_high, new_low);
+    }
 }
 
 // Helper: Convert byte array to u64 (little-endian)
 // Note: Using u32 instead of u8 since WGSL doesn't support u8
-fn bytes_to_u64(bytes: ptr<function, array<u32, 8>>) -> u64 {
-    var result: u64 = u64(0u);
-    for (var i = 0u; i < 8u; i = i + 1u) {
-        result |= u64((*bytes)[i] & 0xFFu) << (i * 8u);
-    }
-    return result;
+fn bytes_to_u64(bytes: ptr<function, array<u32, 8>>) -> vec2<u32> {
+    var low: u32 = 0u;
+    var high: u32 = 0u;
+
+    // Low 32 bits: bytes 0-3
+    low |= ((*bytes)[0] & 0xFFu) << 0u;
+    low |= ((*bytes)[1] & 0xFFu) << 8u;
+    low |= ((*bytes)[2] & 0xFFu) << 16u;
+    low |= ((*bytes)[3] & 0xFFu) << 24u;
+
+    // High 32 bits: bytes 4-7
+    high |= ((*bytes)[4] & 0xFFu) << 0u;
+    high |= ((*bytes)[5] & 0xFFu) << 8u;
+    high |= ((*bytes)[6] & 0xFFu) << 16u;
+    high |= ((*bytes)[7] & 0xFFu) << 24u;
+
+    return vec2<u32>(high, low);
 }
 
 // Helper: Convert u64 to byte array (little-endian)
 // Note: Using u32 instead of u8 since WGSL doesn't support u8
-fn u64_to_bytes(value: u64, bytes: ptr<function, array<u32, 8>>) {
-    for (var i = 0u; i < 8u; i = i + 1u) {
-        (*bytes)[i] = u32((value >> (i * 8u)) & u64(0xFFu));
-    }
+fn u64_to_bytes(value: vec2<u32>, bytes: ptr<function, array<u32, 8>>) {
+    let high = value.x;
+    let low = value.y;
+
+    // Low 32 bits: bytes 0-3
+    (*bytes)[0] = (low >> 0u) & 0xFFu;
+    (*bytes)[1] = (low >> 8u) & 0xFFu;
+    (*bytes)[2] = (low >> 16u) & 0xFFu;
+    (*bytes)[3] = (low >> 24u) & 0xFFu;
+
+    // High 32 bits: bytes 4-7
+    (*bytes)[4] = (high >> 0u) & 0xFFu;
+    (*bytes)[5] = (high >> 8u) & 0xFFu;
+    (*bytes)[6] = (high >> 16u) & 0xFFu;
+    (*bytes)[7] = (high >> 24u) & 0xFFu;
 }
 
 // Keccak-f[1600] permutation
-// State is represented as 25 u64 values (5x5 array of 64-bit lanes)
-fn keccak_f1600(state: ptr<function, array<u64, 25>>) {
-    var bc: array<u64, 5>;  // Temporary array for theta step
-    var t: u64;
+// State is represented as 25 vec2<u32> values (5x5 array of 64-bit lanes)
+fn keccak_f1600(state: ptr<function, array<vec2<u32>, 25>>) {
+    var bc: array<vec2<u32>, 5>;  // Temporary array for theta step
+    var t: vec2<u32>;
 
     for (var round = 0u; round < KECCAK_ROUNDS; round = round + 1u) {
         // θ (theta) step: XOR each column and rotate
         for (var i = 0u; i < 5u; i = i + 1u) {
-            bc[i] = (*state)[i] ^ (*state)[i + 5u] ^ (*state)[i + 10u] ^ (*state)[i + 15u] ^ (*state)[i + 20u];
+            bc[i] = xor_u64(xor_u64(xor_u64(xor_u64((*state)[i], (*state)[i + 5u]), (*state)[i + 10u]), (*state)[i + 15u]), (*state)[i + 20u]);
         }
 
         for (var i = 0u; i < 5u; i = i + 1u) {
-            t = bc[(i + 4u) % 5u] ^ rotl64(bc[(i + 1u) % 5u], 1u);
+            t = xor_u64(bc[(i + 4u) % 5u], rotl_u64(bc[(i + 1u) % 5u], 1u));
             for (var j = 0u; j < 25u; j = j + 5u) {
-                (*state)[j + i] ^= t;
+                (*state)[j + i] = xor_u64((*state)[j + i], t);
             }
         }
 
@@ -168,14 +169,14 @@ fn keccak_f1600(state: ptr<function, array<u64, 25>>) {
         // State is stored as state[x + 5*y] for position (x,y)
         // Pi maps (x,y) -> (y, 2x+3y mod 5)
         // We need to rotate by the offset of the ORIGINAL position, not the destination
-        var temp_state: array<u64, 25>;
+        var temp_state: array<vec2<u32>, 25>;
         for (var i = 0u; i < 25u; i = i + 1u) {
             temp_state[i] = (*state)[i];
         }
-        
+
         for (var i = 0u; i < 25u; i = i + 1u) {
             let j = get_pi_index(i);  // Destination position after pi permutation
-            (*state)[j] = rotl64(temp_state[i], get_rho_offset(i));  // Rotate by original position's offset
+            (*state)[j] = rotl_u64(temp_state[i], get_rho_offset(i));  // Rotate by original position's offset
         }
 
         // χ (chi) step: Non-linear mixing
@@ -184,12 +185,14 @@ fn keccak_f1600(state: ptr<function, array<u64, 25>>) {
                 bc[i] = (*state)[j + i];
             }
             for (var i = 0u; i < 5u; i = i + 1u) {
-                (*state)[j + i] ^= (~bc[(i + 1u) % 5u]) & bc[(i + 2u) % 5u];
+                // NOT operation: ~x = XOR with all 1s
+                let not_b1 = xor_u64(bc[(i + 1u) % 5u], vec2<u32>(0xFFFFFFFFu, 0xFFFFFFFFu));
+                (*state)[j + i] = xor_u64((*state)[j + i], xor_u64(not_b1, bc[(i + 2u) % 5u]));
             }
         }
 
         // ι (iota) step: Add round constant
-        (*state)[0] ^= get_rc(round);
+        (*state)[0] = xor_u64((*state)[0], get_rc(round));
     }
 }
 
@@ -229,10 +232,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         return;
     }
 
-    // Initialize state (25 u64 values = 200 bytes)
-    var state: array<u64, 25>;
+    // Initialize state (25 vec2<u32> values = 200 bytes)
+    var state: array<vec2<u32>, 25>;
     for (var i = 0u; i < 25u; i = i + 1u) {
-        state[i] = u64(0u);
+        state[i] = vec2<u32>(0u, 0u);
     }
 
     // Load input data for this hash
@@ -260,7 +263,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             for (var j = 0u; j < 8u; j = j + 1u) {
                 lane_bytes[j] = input_buffer[offset + i * 8u + j];
             }
-            state[i] ^= bytes_to_u64(&lane_bytes);
+            state[i] = xor_u64(state[i], bytes_to_u64(&lane_bytes));
         }
 
         // Apply Keccak-f permutation
