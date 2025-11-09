@@ -7,9 +7,9 @@
   "types": "./pkg/sha3_wasm.d.ts",
   "exports": {
     ".": {
+      "types": "./pkg/sha3_wasm.d.ts",
       "import": "./pkg/sha3_wasm.js",
-      "require": "./pkg/sha3_wasm.js",
-      "types": "./pkg/sha3_wasm.d.ts"
+      "require": "./pkg/sha3_wasm.js"
     }
   },
   "files": [
