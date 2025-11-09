@@ -669,7 +669,7 @@ async fn test_standalone_sha3_batch_correctness() {
 #[wasm_bindgen_test]
 async fn test_edge_case_all_zeros() {
     let hasher = Sha3WasmHasher::new("sha3-256").await.unwrap();
-    let input = to_uint8_array(&vec![0u8; 100]);
+    let input = to_uint8_array(&[0u8; 100]);
     let result = hasher.hash_single(&input).await;
 
     assert!(result.is_ok());
@@ -680,7 +680,7 @@ async fn test_edge_case_all_zeros() {
 #[wasm_bindgen_test]
 async fn test_edge_case_all_ones() {
     let hasher = Sha3WasmHasher::new("sha3-256").await.unwrap();
-    let input = to_uint8_array(&vec![0xffu8; 100]);
+    let input = to_uint8_array(&[0xffu8; 100]);
     let result = hasher.hash_single(&input).await;
 
     assert!(result.is_ok());
@@ -704,7 +704,7 @@ async fn test_edge_case_boundary_136_bytes() {
     // SHA3-256 has a rate of 136 bytes (1088 bits)
     // Test at exactly the boundary
     let hasher = Sha3WasmHasher::new("sha3-256").await.unwrap();
-    let input = to_uint8_array(&vec![b'a'; 136]);
+    let input = to_uint8_array(&[b'a'; 136]);
     let result = hasher.hash_single(&input).await;
 
     assert!(result.is_ok());
@@ -716,7 +716,7 @@ async fn test_edge_case_boundary_136_bytes() {
 async fn test_edge_case_just_over_boundary() {
     // Test just over the rate boundary
     let hasher = Sha3WasmHasher::new("sha3-256").await.unwrap();
-    let input = to_uint8_array(&vec![b'a'; 137]);
+    let input = to_uint8_array(&[b'a'; 137]);
     let result = hasher.hash_single(&input).await;
 
     assert!(result.is_ok());
