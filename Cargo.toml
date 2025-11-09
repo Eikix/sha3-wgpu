@@ -10,17 +10,17 @@ resolver = "2"
 [workspace.package]
 version = "0.1.0"
 edition = "2021"
-authors = ["Your Name <your.email@example.com>"]
+authors = ["Eikix"]
 license = "MIT OR Apache-2.0"
-repository = "https://github.com/yourusername/sha3-wgpu"
+repository = "https://github.com/Eikix/sha3-wgpu"
 
 [workspace.dependencies]
 # Core dependencies
-bytemuck = "1.14"
+bytemuck = "1.23"
 thiserror = "1.0"
 
 # WebGPU
-wgpu = "27"
+wgpu = "27.0.1"
 pollster = "0.3"
 
 # WASM
@@ -36,7 +36,7 @@ web-sys = "0.3"
 criterion = "0.5"
 
 # Async runtime
-tokio = { version = "1.35", features = ["full"] }
+tokio = { version = "1.47", features = ["full"] }
 
 # CPU reference implementation for testing
 sha3 = "0.10"

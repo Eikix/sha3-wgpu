@@ -38,7 +38,9 @@ impl GpuContext {
                 compatible_surface: None,
             })
             .await
-            .map_err(|e| GpuSha3Error::GpuError(format!("Failed to find GPU adapter: {e}")))?;
+            .map_err(|e| {
+                GpuSha3Error::AdapterNotFound(format!("Failed to find GPU adapter: {e}"))
+            })?;
 
         let adapter_info = adapter.get_info();
 
@@ -91,7 +93,7 @@ impl GpuContext {
                 trace: Trace::Off,
             })
             .await
-            .map_err(|e| GpuSha3Error::GpuError(format!("Failed to create device: {e}")))?;
+            .map_err(|e| GpuSha3Error::DeviceCreation(format!("Failed to create device: {e}")))?;
 
         Ok(Self { device, queue, adapter_info })
     }

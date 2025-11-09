@@ -1,13 +1,22 @@
 //! Core types for SHA-3 operations
 
 /// SHA-3 variant
+///
+/// Represents the different SHA-3 hash function variants, including
+/// fixed-length SHA3 and variable-length SHAKE variants.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Sha3Variant {
+    /// SHA3-224: 224-bit output (28 bytes)
     Sha3_224,
+    /// SHA3-256: 256-bit output (32 bytes)
     Sha3_256,
+    /// SHA3-384: 384-bit output (48 bytes)
     Sha3_384,
+    /// SHA3-512: 512-bit output (64 bytes)
     Sha3_512,
+    /// SHAKE128: Variable-length output, 128-bit security
     Shake128,
+    /// SHAKE256: Variable-length output, 256-bit security
     Shake256,
 }
 
@@ -86,7 +95,21 @@ impl BatchHashParams {
     }
 
     /// Returns the output length in bytes for this batch
-    pub fn get_output_bytes(&self) -> usize {
-        self.output_length.unwrap_or_else(|| self.variant.output_bytes())
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if this is a SHAKE variant without a specified output length
+    pub fn get_output_bytes(&self) -> Result<usize, crate::error::Sha3Error> {
+        match self.output_length {
+            Some(len) => Ok(len),
+            None => {
+                let default_len = self.variant.output_bytes();
+                if default_len > 0 {
+                    Ok(default_len)
+                } else {
+                    Err(crate::error::Sha3Error::InvalidInputLength(0))
+                }
+            }
+        }
     }
 }

@@ -1,6 +1,10 @@
 // WGSL compute shader for GPU-accelerated SHA-3 (Keccak-f[1600])
 // Optimized for batch processing with proper memory alignment
 // Note: WebGPU doesn't support u64, so we use vec2<u32> for 64-bit operations (high, low)
+//
+// Time complexity: O(padded_len / rate_bytes) * O(24 rounds)
+// Space complexity: O(8KB) per thread for input buffer + O(200 bytes) for state
+// NOTE: 64-bit emulation using vec2<u32> adds ~2x overhead
 
 const KECCAK_ROUNDS: u32 = 24u;
 
@@ -204,11 +208,18 @@ fn keccak_f1600(state: ptr<function, array<vec2<u32>, 25>>) {
 
 // SHA-3 padding (pad10*1)
 // Note: Using u32 instead of u8 since WGSL doesn't support u8
+const MAX_INPUT_SIZE: u32 = 8192u;  // Max 8KB per input (reduced from 16KB for better GPU occupancy)
+
 fn apply_padding(
-    input_data: ptr<function, array<u32, 16384>>,  // Max input size per hash (16KB)
+    input_data: ptr<function, array<u32, 8192>>,  // Max input size per hash (8KB)
     input_len: u32,
     rate_bytes: u32
 ) -> u32 {
+    // Bounds check to prevent buffer overflow
+    if (input_len >= MAX_INPUT_SIZE) {
+        return 0u;  // Error: input too large
+    }
+
     // SHA-3 uses domain separation byte 0x06
     (*input_data)[input_len] = 0x06u;
 
@@ -217,12 +228,17 @@ fn apply_padding(
     let rate_blocks = (padded_len + rate_bytes - 1u) / rate_bytes;
     padded_len = rate_blocks * rate_bytes;
 
+    // Bounds check for padded length
+    if (padded_len > MAX_INPUT_SIZE) {
+        return 0u;  // Error: padded length exceeds buffer
+    }
+
     // Clear padding bytes
     for (var i = input_len + 1u; i < padded_len; i = i + 1u) {
         (*input_data)[i] = 0u;
     }
 
-    // Set final bit (pad10*1 pattern)
+    // Set final bit (pad10*1 pattern) - now with bounds check
     (*input_data)[padded_len - 1u] |= 0x80u;
 
     return padded_len;
@@ -233,8 +249,8 @@ fn apply_padding(
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let hash_idx = global_id.x;
 
-    // Bounds check
-    if (hash_idx >= params.num_hashes) {
+    // Bounds check for hash index and input length
+    if (hash_idx >= params.num_hashes || params.input_length > MAX_INPUT_SIZE) {
         return;
     }
 
@@ -246,15 +262,35 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Load input data for this hash
     // Note: Using u32 instead of u8 since WGSL doesn't support u8
-    var input_buffer: array<u32, 16384>;  // Max 16KB per input
+    var input_buffer: array<u32, 8192>;  // Max 8KB per input (reduced for better GPU occupancy)
     let input_offset = hash_idx * params.input_length;
 
-    for (var i = 0u; i < params.input_length; i = i + 1u) {
-        // Load from u32 array (inputs are packed)
+    // Optimized: Load 4 bytes at a time when aligned for better memory performance
+    var i = 0u;
+    let is_aligned = (input_offset % 4u) == 0u;
+
+    if (is_aligned) {
+        // Fast path: aligned access, load words and unpack
+        while (i + 4u <= params.input_length) {
+            let word_idx = (input_offset + i) / 4u;
+            let word = inputs.data[word_idx];
+
+            input_buffer[i] = word & 0xFFu;
+            input_buffer[i + 1u] = (word >> 8u) & 0xFFu;
+            input_buffer[i + 2u] = (word >> 16u) & 0xFFu;
+            input_buffer[i + 3u] = (word >> 24u) & 0xFFu;
+
+            i = i + 4u;
+        }
+    }
+
+    // Handle remaining bytes (or all bytes if not aligned)
+    while (i < params.input_length) {
         let byte_idx = input_offset + i;
         let word_idx = byte_idx / 4u;
         let byte_in_word = byte_idx % 4u;
         input_buffer[i] = u32((inputs.data[word_idx] >> (byte_in_word * 8u)) & 0xFFu);
+        i = i + 1u;
     }
 
     // Apply SHA-3 padding
@@ -286,23 +322,47 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let to_extract = min(params.output_bytes - extracted, params.rate_bytes);
         let lanes_to_extract = (to_extract + 7u) / 8u;  // Round up to include partial lanes
 
+        // Optimized output: Accumulate bytes into words to minimize write operations
+        var byte_offset = 0u;
         for (var i = 0u; i < lanes_to_extract; i = i + 1u) {
             var lane_bytes: array<u32, 8>;
             u64_to_bytes(state[i], &lane_bytes);
 
             // Extract bytes from this lane, but don't exceed to_extract
             let bytes_in_this_lane = min(8u, to_extract - i * 8u);
-            for (var j = 0u; j < bytes_in_this_lane; j = j + 1u) {
-                let byte_pos = output_offset + extracted + i * 8u + j;
+
+            // Process bytes in groups of 4 when aligned for efficient word writes
+            let absolute_byte_pos = output_offset + extracted + byte_offset;
+            let is_output_aligned = (absolute_byte_pos % 4u) == 0u;
+
+            var j = 0u;
+            if (is_output_aligned) {
+                // Fast path: pack 4 bytes into a word and write at once
+                while (j + 4u <= bytes_in_this_lane) {
+                    let word_idx = (absolute_byte_pos + j) / 4u;
+                    let packed_word = (lane_bytes[j] & 0xFFu) |
+                                    ((lane_bytes[j + 1u] & 0xFFu) << 8u) |
+                                    ((lane_bytes[j + 2u] & 0xFFu) << 16u) |
+                                    ((lane_bytes[j + 3u] & 0xFFu) << 24u);
+                    outputs.hash[word_idx] = packed_word;
+                    j = j + 4u;
+                }
+            }
+
+            // Handle remaining bytes with read-modify-write (unavoidable for partial words)
+            while (j < bytes_in_this_lane) {
+                let byte_pos = absolute_byte_pos + j;
                 let word_idx = byte_pos / 4u;
                 let byte_in_word = byte_pos % 4u;
 
-                // Write to output buffer (pack into u32 array)
                 let old_value = outputs.hash[word_idx];
                 let mask = ~(0xFFu << (byte_in_word * 8u));
                 let new_byte = (lane_bytes[j] & 0xFFu) << (byte_in_word * 8u);
                 outputs.hash[word_idx] = (old_value & mask) | new_byte;
+                j = j + 1u;
             }
+
+            byte_offset = byte_offset + bytes_in_this_lane;
         }
 
         extracted = extracted + to_extract;

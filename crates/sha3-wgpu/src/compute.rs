@@ -10,6 +10,9 @@ use crate::{context::GpuContext, error::GpuSha3Error};
 // Include the WGSL shader at compile time
 const SHADER_SOURCE: &str = include_str!("wgsl/sha3.wgsl");
 
+/// Maximum input size per hash in bytes (must match MAX_INPUT_SIZE in WGSL shader)
+const MAX_INPUT_SIZE: usize = 8192;
+
 /// GPU parameters structure matching WGSL uniform
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
@@ -20,7 +23,8 @@ struct GpuHashParams {
     output_bytes: u32,
 }
 
-// Manual implementation for bytemuck safety
+// SAFETY: GpuHashParams is repr(C) with only u32 fields, which are Pod and Zeroable.
+// The struct has no padding, references, or other unsafe fields.
 unsafe impl bytemuck::Pod for GpuHashParams {}
 unsafe impl bytemuck::Zeroable for GpuHashParams {}
 
@@ -130,15 +134,21 @@ impl GpuSha3Hasher {
             return Ok(Vec::new());
         }
 
+        // Validate input size doesn't exceed GPU shader limits
+        if params.input_length > MAX_INPUT_SIZE {
+            return Err(GpuSha3Error::InvalidInputLength(params.input_length));
+        }
+
         let device = self.context.device();
         let queue = self.context.queue();
 
         // Prepare GPU parameters
+        let output_bytes = params.get_output_bytes().map_err(GpuSha3Error::Core)?;
         let gpu_params = GpuHashParams {
             num_hashes: params.num_hashes as u32,
             input_length: params.input_length as u32,
             rate_bytes: params.variant.rate_bytes() as u32,
-            output_bytes: params.get_output_bytes() as u32,
+            output_bytes: output_bytes as u32,
         };
 
         // Calculate buffer sizes (pad to 16-byte alignment to match WGSL struct alignment)
@@ -149,7 +159,7 @@ impl GpuSha3Hasher {
             ((total_input_bytes + 15) / 16) * 16 // Align to 16 bytes
         };
 
-        let total_output_bytes = params.num_hashes * params.get_output_bytes();
+        let total_output_bytes = params.num_hashes * output_bytes;
         let output_buffer_size = if total_output_bytes == 0 {
             16 // Minimum size for empty output (16-byte alignment)
         } else {
@@ -164,12 +174,13 @@ impl GpuSha3Hasher {
             mapped_at_creation: false,
         });
 
-        // Flatten and copy input data
-        let mut input_data = vec![0u8; input_buffer_size];
-        for (i, input) in inputs.iter().enumerate() {
-            let offset = i * params.input_length;
-            input_data[offset..offset + input.len()].copy_from_slice(input);
+        // Flatten and copy input data (optimized allocation)
+        let mut input_data = Vec::with_capacity(input_buffer_size);
+        for input in inputs.iter() {
+            input_data.extend_from_slice(input);
         }
+        // Pad to required buffer size
+        input_data.resize(input_buffer_size, 0);
         queue.write_buffer(&input_buffer, 0, &input_data);
 
         // Create output buffer
@@ -245,7 +256,8 @@ impl GpuSha3Hasher {
         let (sender, receiver) = oneshot::channel();
 
         buffer_slice.map_async(MapMode::Read, move |result| {
-            sender.send(result).unwrap();
+            // If send fails, the receiver was dropped, which will be caught when we await it
+            let _ = sender.send(result);
         });
 
         // Ensure the mapping callback is processed on native targets.
@@ -259,8 +271,10 @@ impl GpuSha3Hasher {
         // Wait for the mapping callback to fire
         receiver
             .await
-            .map_err(|_| GpuSha3Error::GpuError("Failed to receive buffer mapping result".into()))?
-            .map_err(|e| GpuSha3Error::GpuError(format!("Buffer mapping failed: {e:?}")))?;
+            .map_err(|_| {
+                GpuSha3Error::BufferMapping("Failed to receive buffer mapping result".into())
+            })?
+            .map_err(|e| GpuSha3Error::BufferMapping(format!("Buffer mapping failed: {e:?}")))?;
 
         // Extract output data
         let data = buffer_slice.get_mapped_range();
