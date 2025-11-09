@@ -6,10 +6,6 @@ authors.workspace = true
 license.workspace = true
 repository.workspace = true
 
-[[bin]]
-name = "sha3_bench"
-path = "src/main.rs"
-
 [[bench]]
 name = "sha3_comparison"
 harness = false

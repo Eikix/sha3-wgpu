@@ -160,4 +160,161 @@ mod tests {
         test_variant_against_reference(Sha3Variant::Sha3_256, &[input2]).await.unwrap();
         test_variant_against_reference(Sha3Variant::Sha3_256, &[input3]).await.unwrap();
     }
+
+    // SHAKE variant tests (from audit report)
+    #[tokio::test]
+    async fn test_shake128_default_output() {
+        use sha3_core::BatchHashParams;
+
+        let context = GpuContext::new().await.unwrap();
+        let hasher = GpuSha3Hasher::new(context, Sha3Variant::Shake128).unwrap();
+        let inputs = vec![b"test".as_slice()];
+        let params = BatchHashParams::new(Sha3Variant::Shake128, 1, 4)
+            .with_output_length(32);
+        let result = hasher.hash_batch_with_params(&inputs, &params).await;
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap().len(), 32);
+    }
+
+    #[tokio::test]
+    async fn test_shake128_custom_output_length() {
+        use sha3_core::BatchHashParams;
+
+        let context = GpuContext::new().await.unwrap();
+        let hasher = GpuSha3Hasher::new(context, Sha3Variant::Shake128).unwrap();
+        let inputs = vec![b"test input for SHAKE128".as_slice()];
+
+        // Test various output lengths
+        for output_len in [16, 32, 64, 128] {
+            let params = BatchHashParams::new(Sha3Variant::Shake128, 1, inputs[0].len())
+                .with_output_length(output_len);
+            let result = hasher.hash_batch_with_params(&inputs, &params).await;
+            assert!(result.is_ok());
+            assert_eq!(result.unwrap().len(), output_len);
+        }
+    }
+
+    #[tokio::test]
+    async fn test_shake256_custom_output_length() {
+        use sha3_core::BatchHashParams;
+
+        let context = GpuContext::new().await.unwrap();
+        let hasher = GpuSha3Hasher::new(context, Sha3Variant::Shake256).unwrap();
+        let inputs = vec![b"test input for SHAKE256".as_slice()];
+
+        let params = BatchHashParams::new(Sha3Variant::Shake256, 1, inputs[0].len())
+            .with_output_length(64);
+        let result = hasher.hash_batch_with_params(&inputs, &params).await;
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap().len(), 64);
+    }
+
+    // Error path tests (from audit report)
+    #[tokio::test]
+    async fn test_error_mismatched_input_lengths() {
+        let context = GpuContext::new().await.unwrap();
+        let hasher = GpuSha3Hasher::new(context, Sha3Variant::Sha3_256).unwrap();
+        let inputs = vec![b"short".as_slice(), b"longer input".as_slice()];
+        let result = hasher.hash_batch(&inputs).await;
+        assert!(result.is_err());
+        assert!(matches!(result.unwrap_err(), GpuSha3Error::InvalidInputLength(_)));
+    }
+
+    #[tokio::test]
+    async fn test_error_shake_without_output_length() {
+        use sha3_core::BatchHashParams;
+
+        let context = GpuContext::new().await.unwrap();
+        let hasher = GpuSha3Hasher::new(context, Sha3Variant::Shake128).unwrap();
+        let inputs = vec![b"test".as_slice()];
+
+        // Create params without setting output_length for SHAKE variant
+        let params = BatchHashParams::new(Sha3Variant::Shake128, 1, 4);
+        let result = hasher.hash_batch_with_params(&inputs, &params).await;
+        assert!(result.is_err());
+    }
+
+    // Rate boundary tests (from audit report)
+    #[tokio::test]
+    async fn test_sha3_224_at_rate_boundary() {
+        // SHA3-224 rate is 144 bytes - test 143, 144, 145 byte inputs
+        let context = GpuContext::new().await.unwrap();
+        let hasher = GpuSha3Hasher::new(context, Sha3Variant::Sha3_224).unwrap();
+
+        for size in [143, 144, 145] {
+            let input = vec![0xAAu8; size];
+            let inputs = vec![input.as_slice()];
+            let result = hasher.hash_batch(&inputs).await;
+            assert!(result.is_ok(), "Failed for size {size}");
+        }
+    }
+
+    #[tokio::test]
+    async fn test_sha3_256_at_rate_boundary() {
+        // SHA3-256 rate is 136 bytes - test 135, 136, 137 byte inputs
+        let context = GpuContext::new().await.unwrap();
+        let hasher = GpuSha3Hasher::new(context, Sha3Variant::Sha3_256).unwrap();
+
+        for size in [135, 136, 137] {
+            let input = vec![0xBBu8; size];
+            let inputs = vec![input.as_slice()];
+            let result = hasher.hash_batch(&inputs).await;
+            assert!(result.is_ok(), "Failed for size {size}");
+        }
+    }
+
+    #[tokio::test]
+    async fn test_sha3_384_at_rate_boundary() {
+        // SHA3-384 rate is 104 bytes - test 103, 104, 105 byte inputs
+        let context = GpuContext::new().await.unwrap();
+        let hasher = GpuSha3Hasher::new(context, Sha3Variant::Sha3_384).unwrap();
+
+        for size in [103, 104, 105] {
+            let input = vec![0xCCu8; size];
+            let inputs = vec![input.as_slice()];
+            let result = hasher.hash_batch(&inputs).await;
+            assert!(result.is_ok(), "Failed for size {size}");
+        }
+    }
+
+    #[tokio::test]
+    async fn test_sha3_512_at_rate_boundary() {
+        // SHA3-512 rate is 72 bytes - test 71, 72, 73 byte inputs
+        let context = GpuContext::new().await.unwrap();
+        let hasher = GpuSha3Hasher::new(context, Sha3Variant::Sha3_512).unwrap();
+
+        for size in [71, 72, 73] {
+            let input = vec![0xDDu8; size];
+            let inputs = vec![input.as_slice()];
+            let result = hasher.hash_batch(&inputs).await;
+            assert!(result.is_ok(), "Failed for size {size}");
+        }
+    }
+
+    // Concurrent usage tests (from audit report)
+    #[tokio::test]
+    async fn test_concurrent_batch_hashing() {
+        use std::sync::Arc;
+
+        let context = GpuContext::new().await.unwrap();
+        let hasher = Arc::new(GpuSha3Hasher::new(context, Sha3Variant::Sha3_256).unwrap());
+
+        // Launch multiple concurrent hash_batch calls
+        let mut handles = vec![];
+        for i in 0..5 {
+            let hasher_clone = Arc::clone(&hasher);
+            let handle = tokio::spawn(async move {
+                let input = format!("concurrent test {i}");
+                let inputs = vec![input.as_bytes()];
+                hasher_clone.hash_batch(&inputs).await
+            });
+            handles.push(handle);
+        }
+
+        // Wait for all to complete
+        for handle in handles {
+            let result = handle.await.unwrap();
+            assert!(result.is_ok());
+        }
+    }
 }

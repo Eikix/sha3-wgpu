@@ -1,3 +1,8 @@
-# Clippy configuration
+# Clippy configuration for stricter linting
 avoid-breaking-exported-api = false
 msrv = "1.70"
+
+# Additional strict checks
+too-many-arguments-threshold = 5
+type-complexity-threshold = 100
+single-char-binding-names-threshold = 3
