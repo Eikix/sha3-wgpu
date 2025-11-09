@@ -31,21 +31,24 @@ const SCENARIOS: Scenario[] = [
     label: "4,096 leaves (2^12)",
     leaves: 4096,
     runActual: true,
-    description: "Fits easily on most GPUs – good for verifying correctness and pipeline overhead.",
+    description:
+      "Fits easily on most GPUs – good for verifying correctness and pipeline overhead.",
   },
   {
     id: "demo-65k",
     label: "65,536 leaves (2^16)",
     leaves: 65_536,
     runActual: true,
-    description: "Stresses batching – roughly 1 MB of parent hashing work per level.",
+    description:
+      "Stresses batching – roughly 1 MB of parent hashing work per level.",
   },
   {
     id: "projection-1m",
     label: "1,048,576 leaves (2^20)",
     leaves: 1_048_576,
-    runActual: false,
-    description: "Matches a 1M-leaf Merkle tree. Uses measured throughput to project timings.",
+    runActual: true,
+    description:
+      "Matches a 1M-leaf Merkle tree. Uses measured throughput to project timings.",
   },
 ];
 
@@ -75,7 +78,7 @@ function generateLeaves(count: number): Uint8Array[] {
 }
 
 function buildMerkleCPU(leaves: Uint8Array[]) {
-  let level = leaves.map((leaf) => leaf.slice());
+  let level: Uint8Array[] = leaves.map((leaf) => leaf.slice());
   let totalPairs = 0;
   let totalBytes = 0;
   let levels = 0;
@@ -110,10 +113,13 @@ function buildMerkleCPU(leaves: Uint8Array[]) {
   };
 }
 
-async function buildMerkleGPU(hasher: {
-  hashBatch(inputs: Uint8Array[]): Promise<Uint8Array[]>;
-}, leaves: Uint8Array[]) {
-  let level = leaves.map((leaf) => leaf.slice());
+async function buildMerkleGPU(
+  hasher: {
+    hashBatch(inputs: Uint8Array[]): Promise<Uint8Array[]>;
+  },
+  leaves: Uint8Array[],
+) {
+  let level: Uint8Array[] = leaves.map((leaf) => leaf.slice());
   let totalPairs = 0;
   let totalBytes = 0;
   let levels = 0;
@@ -196,9 +202,10 @@ function MerkleTreeDemo() {
         const gpuMetrics = await buildMerkleGPU(hasher, leaves);
 
         const totalBytes = gpuMetrics.totalBytes;
-        const gpuThroughput = totalBytes > 0
-          ? (totalBytes / (1024 * 1024)) / (gpuMetrics.timeMs / 1000)
-          : 0;
+        const gpuThroughput =
+          totalBytes > 0
+            ? totalBytes / (1024 * 1024) / (gpuMetrics.timeMs / 1000)
+            : 0;
 
         result = {
           scenarioId: scenario.id,
@@ -220,10 +227,10 @@ function MerkleTreeDemo() {
         const totalPairs = leaves - 1;
         const totalBytes = totalPairs * INTERNAL_NODE_SIZE;
         const cpuTimeMs = totalBytes / CPU_BYTES_PER_MS;
-        const gpuTimeMs = GPU_DISPATCH_OVERHEAD_MS + totalBytes / GPU_BYTES_PER_MS;
-        const gpuThroughput = totalBytes > 0
-          ? (totalBytes / (1024 * 1024)) / (gpuTimeMs / 1000)
-          : 0;
+        const gpuTimeMs =
+          GPU_DISPATCH_OVERHEAD_MS + totalBytes / GPU_BYTES_PER_MS;
+        const gpuThroughput =
+          totalBytes > 0 ? totalBytes / (1024 * 1024) / (gpuTimeMs / 1000) : 0;
 
         result = {
           scenarioId: scenario.id,
@@ -254,20 +261,27 @@ function MerkleTreeDemo() {
     <div>
       <h2>Merkle Tree Accelerator</h2>
       <p>
-        Build layered SHA3-256 Merkle trees using the GPU batch hasher. Each internal node
-        hashes two 32-byte children into a new 32-byte parent (64 bytes per hash call).
-        Compare measured browser timings with projections for much larger trees.
+        Build layered SHA3-256 Merkle trees using the GPU batch hasher. Each
+        internal node hashes two 32-byte children into a new 32-byte parent (64
+        bytes per hash call). Compare measured browser timings with projections
+        for much larger trees.
       </p>
 
       {hasherError && (
-        <div className="output-line error">Failed to initialize GPU hasher: {hasherError}</div>
+        <div className="output-line error">
+          Failed to initialize GPU hasher: {hasherError}
+        </div>
       )}
 
-      <div className="controls" style={{ flexDirection: "column", gap: "12px" }}>
+      <div
+        className="controls"
+        style={{ flexDirection: "column", gap: "12px" }}
+      >
         {SCENARIOS.map((scenario) => {
           const existing = scenarioMap.get(scenario.id);
           const buttonDisabled =
-            (scenario.runActual && (!hasher || loadingScenario === scenario.id)) ||
+            (scenario.runActual &&
+              (!hasher || loadingScenario === scenario.id)) ||
             (!scenario.runActual && loadingScenario === scenario.id);
           return (
             <div
@@ -285,14 +299,24 @@ function MerkleTreeDemo() {
             >
               <div>
                 <div style={{ fontWeight: "bold" }}>{scenario.label}</div>
-                <div style={{ fontSize: "0.85em", color: "#9ca3af" }}>{scenario.description}</div>
                 <div style={{ fontSize: "0.85em", color: "#9ca3af" }}>
-                  Leaves: {formatNumber(scenario.leaves)} &nbsp;|&nbsp; Data in: {formatMiB(scenario.leaves * LEAF_SIZE)} MiB
+                  {scenario.description}
+                </div>
+                <div style={{ fontSize: "0.85em", color: "#9ca3af" }}>
+                  Leaves: {formatNumber(scenario.leaves)} &nbsp;|&nbsp; Data in:{" "}
+                  {formatMiB(scenario.leaves * LEAF_SIZE)} MiB
                 </div>
               </div>
-              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <div
+                style={{ display: "flex", alignItems: "center", gap: "8px" }}
+              >
                 {existing && (
-                  <span style={{ fontSize: "0.8em", color: existing.estimated ? "#f59e0b" : "#22c55e" }}>
+                  <span
+                    style={{
+                      fontSize: "0.8em",
+                      color: existing.estimated ? "#f59e0b" : "#22c55e",
+                    }}
+                  >
                     {existing.estimated ? "Estimated" : "Measured"}
                   </span>
                 )}
@@ -300,7 +324,11 @@ function MerkleTreeDemo() {
                   onClick={() => handleRunScenario(scenario)}
                   disabled={buttonDisabled}
                 >
-                  {loadingScenario === scenario.id ? "Running…" : existing ? "Re-run" : "Run"}
+                  {loadingScenario === scenario.id
+                    ? "Running…"
+                    : existing
+                      ? "Re-run"
+                      : "Run"}
                 </button>
               </div>
             </div>
@@ -335,12 +363,16 @@ function MerkleTreeDemo() {
                 <td>{formatMs(result.cpuTimeMs)}</td>
                 <td>{formatMs(result.gpuTimeMs)}</td>
                 <td
-                  className={result.speedup >= 1 ? "speedup-good" : "speedup-bad"}
+                  className={
+                    result.speedup >= 1 ? "speedup-good" : "speedup-bad"
+                  }
                 >
                   {result.speedup.toFixed(2)}x
                 </td>
                 <td>{result.gpuThroughputMiBs.toFixed(1)} MiB/s</td>
-                <td style={{ color: result.estimated ? "#f59e0b" : "#9ca3af" }}>{result.note}</td>
+                <td style={{ color: result.estimated ? "#f59e0b" : "#9ca3af" }}>
+                  {result.note}
+                </td>
               </tr>
             ))}
           </tbody>
