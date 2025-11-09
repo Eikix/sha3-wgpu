@@ -1,9 +1,9 @@
 //! GPU compute pipeline for SHA-3 batch hashing
 
+use futures::channel::oneshot;
 use sha3_core::{BatchHashParams, Sha3Variant};
 use wgpu::util::DeviceExt;
 use wgpu::*;
-use futures::channel::oneshot;
 
 use crate::{context::GpuContext, error::GpuSha3Error};
 

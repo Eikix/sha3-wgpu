@@ -34,11 +34,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Display results
     let output_size = hasher.variant().output_bytes();
-    for (i, (input, hash)) in inputs
-        .iter()
-        .zip(results.chunks(output_size))
-        .enumerate()
-    {
+    for (i, (input, hash)) in inputs.iter().zip(results.chunks(output_size)).enumerate() {
         let input_str = String::from_utf8_lossy(input);
         let hash_hex = hex::encode(hash);
         println!("Hash {}: {}", i + 1, input_str);
@@ -54,10 +50,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 #[allow(dead_code)]
 mod hex {
     pub fn encode(bytes: &[u8]) -> String {
-        bytes
-            .iter()
-            .map(|b| format!("{:02x}", b))
-            .collect::<String>()
+        bytes.iter().map(|b| format!("{:02x}", b)).collect::<String>()
     }
 }
-

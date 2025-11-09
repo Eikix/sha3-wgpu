@@ -9,4 +9,3 @@ repository.workspace = true
 [dependencies]
 bytemuck.workspace = true
 thiserror.workspace = true
-

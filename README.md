@@ -107,29 +107,38 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 ### Browser (WebGPU)
 
 ```javascript
-import init, { Sha3WasmHasher } from './pkg/sha3_wasm.js';
+import init, { Sha3WasmHasher } from "./pkg/sha3_wasm.js";
 
 // Initialize WASM module (required for web target)
 await init();
 
 // Create hasher
-const hasher = await new Sha3WasmHasher('sha3-256');
+const hasher = await new Sha3WasmHasher("sha3-256");
 
 // Single hash
-const input = new TextEncoder().encode('hello world');
+const input = new TextEncoder().encode("hello world");
 const hash = await hasher.hashSingle(input);
-console.log(Array.from(hash).map(b => b.toString(16).padStart(2, '0')).join(''));
+console.log(
+  Array.from(hash)
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join(""),
+);
 
 // Batch hashing (optimal for GPU)
 const inputs = [
-  new TextEncoder().encode('message 1'),
-  new TextEncoder().encode('message 2'),
-  new TextEncoder().encode('message 3'),
+  new TextEncoder().encode("message 1"),
+  new TextEncoder().encode("message 2"),
+  new TextEncoder().encode("message 3"),
 ];
 
 const hashes = await hasher.hashBatch(inputs);
 hashes.forEach((hash, i) => {
-  console.log(`Hash ${i}:`, Array.from(hash).map(b => b.toString(16).padStart(2, '0')).join(''));
+  console.log(
+    `Hash ${i}:`,
+    Array.from(hash)
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join(""),
+  );
 });
 ```
 
@@ -214,6 +223,7 @@ cargo test -- --nocapture
 ```
 
 Tests cover:
+
 - All SHA-3 variants (SHA3-224, SHA3-256, SHA3-384, SHA3-512)
 - Empty inputs
 - Single inputs
@@ -230,6 +240,7 @@ cargo bench
 ```
 
 Benchmarks include:
+
 - Different batch sizes (1, 10, 50, 100, 500, 1000)
 - Different input sizes (32B to 4KB)
 - Single vs batch comparison
@@ -249,6 +260,7 @@ The core SHA-3 algorithm is implemented in WGSL following the Keccak specificati
 ### WGSL Shader
 
 The compute shader (`sha3.wgsl`) implements:
+
 - Full Keccak-f[1600] permutation (24 rounds)
 - Proper padding and domain separation
 - Batch processing (one workgroup per hash)
@@ -267,6 +279,7 @@ The compute shader (`sha3.wgsl`) implements:
 **WebGPU is only available in modern browsers.** Node.js and Bun.js do not support WebGPU.
 
 **Solutions:**
+
 1. **Use the browser demo**: Run `npm run demo` and open in Chrome/Edge 113+
 2. **Check browser support**: Visit [webgpu.io](https://webgpu.io) to verify WebGPU support
 3. **Use native Rust**: For non-browser GPU acceleration, use the native Rust API:
@@ -277,6 +290,7 @@ The compute shader (`sha3.wgsl`) implements:
 ### GPU Initialization Failures
 
 If GPU initialization fails:
+
 - Ensure you have a compatible GPU installed
 - Check that GPU drivers are up to date
 - For native Rust usage, ensure Vulkan (Linux/Windows), Metal (macOS), or DX12 (Windows) drivers are installed
@@ -297,8 +311,8 @@ MIT OR Apache-2.0
 ## Contributing
 
 Contributions are welcome! Please ensure:
+
 - All tests pass (`cargo test`)
 - Code is formatted (`cargo fmt`)
 - No clippy warnings (`cargo clippy`)
 - Benchmarks show no performance regression
-

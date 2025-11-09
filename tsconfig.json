@@ -15,15 +15,6 @@
     "outDir": "./dist",
     "rootDir": "./"
   },
-  "include": [
-    "pkg/**/*.ts",
-    "pkg/**/*.d.ts"
-  ],
-  "exclude": [
-    "node_modules",
-    "target",
-    "pkg-web",
-    "pkg-bundler"
-  ]
+  "include": ["pkg/**/*.ts", "pkg/**/*.d.ts"],
+  "exclude": ["node_modules", "target", "pkg-web", "pkg-bundler"]
 }
-

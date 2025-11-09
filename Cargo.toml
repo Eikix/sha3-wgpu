@@ -1,9 +1,9 @@
 [workspace]
 members = [
-    "crates/sha3-core",
-    "crates/sha3-wgpu",
-    "crates/sha3-wasm",
-    "crates/sha3-bench",
+  "crates/sha3-core",
+  "crates/sha3-wgpu",
+  "crates/sha3-wasm",
+  "crates/sha3-bench",
 ]
 resolver = "2"
 
@@ -50,4 +50,3 @@ panic = "abort"
 
 [profile.release.package."*"]
 opt-level = 3
-

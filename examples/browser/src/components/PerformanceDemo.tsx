@@ -1,6 +1,6 @@
-import { useState } from 'react';
-import { useHasher } from '../hooks/useHasher';
-import { sha3_256 } from 'js-sha3';
+import { useState } from "react";
+import { useHasher } from "../hooks/useHasher";
+import { sha3_256 } from "js-sha3";
 
 interface BenchmarkResult {
   batchSize: number;
@@ -18,9 +18,11 @@ function PerformanceDemo() {
   const [loading, setLoading] = useState(false);
   const [currentBatch, setCurrentBatch] = useState<number | null>(null);
 
-  const { hasher, error: hasherError } = useHasher('sha3-256');
+  const { hasher, error: hasherError } = useHasher("sha3-256");
 
-  const benchmarkCPU = async (inputs: Uint8Array[]): Promise<{ time: number; hashes: string[] }> => {
+  const benchmarkCPU = async (
+    inputs: Uint8Array[],
+  ): Promise<{ time: number; hashes: string[] }> => {
     const start = performance.now();
 
     // Use js-sha3 for CPU SHA-3 benchmarking
@@ -34,8 +36,10 @@ function PerformanceDemo() {
     return { time: end - start, hashes };
   };
 
-  const benchmarkGPU = async (inputs: Uint8Array[]): Promise<{ time: number; hashes: Uint8Array[] }> => {
-    if (!hasher) throw new Error('Hasher not initialized');
+  const benchmarkGPU = async (
+    inputs: Uint8Array[],
+  ): Promise<{ time: number; hashes: Uint8Array[] }> => {
+    if (!hasher) throw new Error("Hasher not initialized");
 
     const start = performance.now();
     const hashes = await hasher.hashBatch(inputs);
@@ -76,12 +80,12 @@ function PerformanceDemo() {
 
       // Verify results match between CPU and GPU
       let verified = true;
-      let sampleHash = '';
+      let sampleHash = "";
 
       for (let i = 0; i < inputs.length; i++) {
         const gpuHashHex = Array.from(gpuResult.hashes[i])
-          .map(b => b.toString(16).padStart(2, '0'))
-          .join('');
+          .map((b) => b.toString(16).padStart(2, "0"))
+          .join("");
         const cpuHash = cpuResult.hashes[i];
 
         if (i === 0) {
@@ -93,7 +97,7 @@ function PerformanceDemo() {
           console.error(`Hash mismatch at index ${i}:`, {
             gpu: gpuHashHex,
             cpu: cpuHash,
-            input: new TextDecoder().decode(inputs[i])
+            input: new TextDecoder().decode(inputs[i]),
           });
           break;
         }
@@ -110,7 +114,7 @@ function PerformanceDemo() {
         speedup,
         throughput,
         verified,
-        sampleHash
+        sampleHash,
       });
 
       setResults([...benchResults]);
@@ -125,7 +129,9 @@ function PerformanceDemo() {
       <div>
         <h2>Performance Comparison</h2>
         <div className="output">
-          <div className="output-line error">Error initializing hasher: {hasherError}</div>
+          <div className="output-line error">
+            Error initializing hasher: {hasherError}
+          </div>
         </div>
       </div>
     );
@@ -135,12 +141,14 @@ function PerformanceDemo() {
     <div>
       <h2>GPU vs CPU SHA-3 Comparison</h2>
       <p>
-        Compare GPU-accelerated SHA-3 performance against CPU SHA-3 (using js-sha3 library).
-        This benchmark tests both performance and correctness by verifying that GPU and CPU
-        implementations produce identical hash outputs.
+        Compare GPU-accelerated SHA-3 performance against CPU SHA-3 (using
+        js-sha3 library). This benchmark tests both performance and correctness
+        by verifying that GPU and CPU implementations produce identical hash
+        outputs.
       </p>
-      <p style={{ fontSize: '0.9em', color: '#9ca3af' }}>
-        The GPU excels at batch processing, showing significant speedups with larger batch sizes (100+ hashes).
+      <p style={{ fontSize: "0.9em", color: "#9ca3af" }}>
+        The GPU excels at batch processing, showing significant speedups with
+        larger batch sizes (100+ hashes).
       </p>
 
       <div className="controls">
@@ -149,7 +157,7 @@ function PerformanceDemo() {
           {loading && <span className="loading"></span>}
         </button>
         {loading && currentBatch && (
-          <span style={{ color: '#9ca3af' }}>
+          <span style={{ color: "#9ca3af" }}>
             Testing batch size: {currentBatch}
           </span>
         )}
@@ -173,16 +181,22 @@ function PerformanceDemo() {
                 <td>{result.batchSize}</td>
                 <td>{result.cpuTime.toFixed(2)} ms</td>
                 <td>{result.gpuTime.toFixed(2)} ms</td>
-                <td className={result.speedup >= 1 ? 'speedup-good' : 'speedup-bad'}>
+                <td
+                  className={
+                    result.speedup >= 1 ? "speedup-good" : "speedup-bad"
+                  }
+                >
                   {result.speedup.toFixed(2)}x
                 </td>
                 <td>{result.throughput.toFixed(0)} hashes/sec</td>
                 <td>
-                  <span style={{
-                    color: result.verified ? '#22c55e' : '#ef4444',
-                    fontWeight: 'bold'
-                  }}>
-                    {result.verified ? '✓ PASS' : '✗ FAIL'}
+                  <span
+                    style={{
+                      color: result.verified ? "#22c55e" : "#ef4444",
+                      fontWeight: "bold",
+                    }}
+                  >
+                    {result.verified ? "✓ PASS" : "✗ FAIL"}
                   </span>
                 </td>
               </tr>
@@ -192,26 +206,53 @@ function PerformanceDemo() {
       )}
 
       {results.length > 0 && (
-        <div style={{ marginTop: '20px', padding: '15px', background: '#0a0a0a', borderRadius: '8px', border: '1px solid #333' }}>
+        <div
+          style={{
+            marginTop: "20px",
+            padding: "15px",
+            background: "#0a0a0a",
+            borderRadius: "8px",
+            border: "1px solid #333",
+          }}
+        >
           <div className="output-line info">Benchmark Complete!</div>
 
           {/* Verification Summary */}
-          <div style={{ marginTop: '15px', padding: '10px', background: '#1a1a1a', borderRadius: '4px' }}>
-            <div style={{ fontWeight: 'bold', marginBottom: '8px' }}>Verification Summary:</div>
-            {results.every(r => r.verified) ? (
-              <div style={{ color: '#22c55e' }}>
-                ✓ All GPU hashes match CPU SHA-3 hashes - Implementation is correct!
+          <div
+            style={{
+              marginTop: "15px",
+              padding: "10px",
+              background: "#1a1a1a",
+              borderRadius: "4px",
+            }}
+          >
+            <div style={{ fontWeight: "bold", marginBottom: "8px" }}>
+              Verification Summary:
+            </div>
+            {results.every((r) => r.verified) ? (
+              <div style={{ color: "#22c55e" }}>
+                ✓ All GPU hashes match CPU SHA-3 hashes - Implementation is
+                correct!
               </div>
             ) : (
-              <div style={{ color: '#ef4444' }}>
+              <div style={{ color: "#ef4444" }}>
                 ✗ Some hashes don't match - Check console for details
               </div>
             )}
           </div>
 
           {/* Performance Summary */}
-          <div style={{ marginTop: '10px', padding: '10px', background: '#1a1a1a', borderRadius: '4px' }}>
-            <div style={{ fontWeight: 'bold', marginBottom: '8px' }}>Performance Notes:</div>
+          <div
+            style={{
+              marginTop: "10px",
+              padding: "10px",
+              background: "#1a1a1a",
+              borderRadius: "4px",
+            }}
+          >
+            <div style={{ fontWeight: "bold", marginBottom: "8px" }}>
+              Performance Notes:
+            </div>
             <div className="output-line">
               • GPU performance improves significantly with larger batch sizes
             </div>
@@ -219,15 +260,31 @@ function PerformanceDemo() {
               • GPU initialization overhead is amortized across more hashes
             </div>
             <div className="output-line">
-              • CPU time is for single-threaded JavaScript SHA-3 (js-sha3 library)
+              • CPU time is for single-threaded JavaScript SHA-3 (js-sha3
+              library)
             </div>
           </div>
 
           {/* Sample Hash */}
           {results[0]?.sampleHash && (
-            <div style={{ marginTop: '10px', padding: '10px', background: '#1a1a1a', borderRadius: '4px' }}>
-              <div style={{ fontWeight: 'bold', marginBottom: '8px' }}>Sample Hash (first input):</div>
-              <code style={{ fontSize: '0.85em', wordBreak: 'break-all', color: '#60a5fa' }}>
+            <div
+              style={{
+                marginTop: "10px",
+                padding: "10px",
+                background: "#1a1a1a",
+                borderRadius: "4px",
+              }}
+            >
+              <div style={{ fontWeight: "bold", marginBottom: "8px" }}>
+                Sample Hash (first input):
+              </div>
+              <code
+                style={{
+                  fontSize: "0.85em",
+                  wordBreak: "break-all",
+                  color: "#60a5fa",
+                }}
+              >
                 {results[0].sampleHash}
               </code>
             </div>

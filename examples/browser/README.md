@@ -14,6 +14,7 @@ A minimal Vite + React application demonstrating GPU-accelerated SHA-3 hashing i
    - Check support at [webgpu.io](https://webgpu.io)
 
 2. **Build the WASM module** (from repository root):
+
    ```bash
    npm run build
    ```
@@ -26,11 +27,13 @@ A minimal Vite + React application demonstrating GPU-accelerated SHA-3 hashing i
 ## Running the Demo
 
 From the repository root:
+
 ```bash
 npm run demo
 ```
 
 Or from this directory:
+
 ```bash
 npm run dev
 ```
@@ -42,16 +45,19 @@ Then open your browser to the URL shown (typically `http://localhost:5173`).
 The demo includes three interactive sections:
 
 ### 1. Basic Usage
+
 - Single hash computation
 - Batch hashing multiple inputs
 - View SHA-3 hashes in real-time
 
 ### 2. Performance Comparison
+
 - Benchmark GPU vs CPU performance
 - Test different batch sizes (10, 50, 100, 500, 1000)
 - See speedup metrics and throughput
 
 ### 3. All SHA-3 Variants
+
 - Test all SHA-3 variants:
   - SHA3-224 (28 bytes)
   - SHA3-256 (32 bytes)
@@ -70,17 +76,22 @@ The demo includes three interactive sections:
 ## Troubleshooting
 
 ### WebGPU Not Supported
+
 If you see "WebGPU is not supported":
+
 - Update to Chrome/Edge 113 or later
 - Enable WebGPU in Firefox Nightly: `about:config` → `dom.webgpu.enabled` → `true`
 - Check [caniuse.com/webgpu](https://caniuse.com/webgpu) for browser compatibility
 
 ### WASM Module Not Found
+
 If you get import errors:
+
 1. Ensure you've built the WASM module: `npm run build` (from root)
 2. The `pkg` directory should exist in the repository root
 
 ### Performance Issues
+
 - First hash may be slower due to GPU initialization
 - GPU performance improves with larger batch sizes (100+ hashes)
 - Try the Performance tab to see optimal batch sizes

@@ -9,4 +9,3 @@ repository = "https://github.com/yourusername/sha3-wgpu"
 [package.metadata.wasm-pack.profile.release]
 wasm-opt = ["-Os", "--enable-mutable-globals"]
 # Add "--enable-threads" if you enable wasm-bindgen-rayon
-
