@@ -10,6 +10,9 @@ use crate::{context::GpuContext, error::GpuSha3Error};
 // Include the WGSL shader at compile time
 const SHADER_SOURCE: &str = include_str!("wgsl/sha3.wgsl");
 
+/// Maximum input size per hash in bytes (must match MAX_INPUT_SIZE in WGSL shader)
+const MAX_INPUT_SIZE: usize = 8192;
+
 /// GPU parameters structure matching WGSL uniform
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
@@ -129,6 +132,11 @@ impl GpuSha3Hasher {
     ) -> Result<Vec<u8>, GpuSha3Error> {
         if inputs.is_empty() {
             return Ok(Vec::new());
+        }
+
+        // Validate input size doesn't exceed GPU shader limits
+        if params.input_length > MAX_INPUT_SIZE {
+            return Err(GpuSha3Error::InvalidInputLength(params.input_length));
         }
 
         let device = self.context.device();

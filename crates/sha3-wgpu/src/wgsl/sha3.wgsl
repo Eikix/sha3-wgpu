@@ -3,7 +3,7 @@
 // Note: WebGPU doesn't support u64, so we use vec2<u32> for 64-bit operations (high, low)
 //
 // Time complexity: O(padded_len / rate_bytes) * O(24 rounds)
-// Space complexity: O(4KB) per thread for input buffer + O(200 bytes) for state
+// Space complexity: O(8KB) per thread for input buffer + O(200 bytes) for state
 // NOTE: 64-bit emulation using vec2<u32> adds ~2x overhead
 
 const KECCAK_ROUNDS: u32 = 24u;
@@ -208,10 +208,10 @@ fn keccak_f1600(state: ptr<function, array<vec2<u32>, 25>>) {
 
 // SHA-3 padding (pad10*1)
 // Note: Using u32 instead of u8 since WGSL doesn't support u8
-const MAX_INPUT_SIZE: u32 = 4096u;  // Max 4KB per input (reduced from 16KB for better GPU occupancy)
+const MAX_INPUT_SIZE: u32 = 8192u;  // Max 8KB per input (reduced from 16KB for better GPU occupancy)
 
 fn apply_padding(
-    input_data: ptr<function, array<u32, 4096>>,  // Max input size per hash (4KB)
+    input_data: ptr<function, array<u32, 8192>>,  // Max input size per hash (8KB)
     input_len: u32,
     rate_bytes: u32
 ) -> u32 {
@@ -262,7 +262,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Load input data for this hash
     // Note: Using u32 instead of u8 since WGSL doesn't support u8
-    var input_buffer: array<u32, 4096>;  // Max 4KB per input (reduced for better GPU occupancy)
+    var input_buffer: array<u32, 8192>;  // Max 8KB per input (reduced for better GPU occupancy)
     let input_offset = hash_idx * params.input_length;
 
     // Optimized: Load 4 bytes at a time when aligned for better memory performance

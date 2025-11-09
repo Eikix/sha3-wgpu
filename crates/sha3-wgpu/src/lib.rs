@@ -141,7 +141,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_long_input() {
-        let long_input = vec![b'a'; 10000];
+        // Test with 8000 bytes (within the 8KB GPU buffer limit)
+        let long_input = vec![b'a'; 8000];
         let inputs = vec![long_input.as_slice()];
 
         test_variant_against_reference(Sha3Variant::Sha3_256, &inputs).await.unwrap();
@@ -215,6 +216,18 @@ mod tests {
         let context = GpuContext::new().await.unwrap();
         let hasher = GpuSha3Hasher::new(context, Sha3Variant::Sha3_256).unwrap();
         let inputs = vec![b"short".as_slice(), b"longer input".as_slice()];
+        let result = hasher.hash_batch(&inputs).await;
+        assert!(result.is_err());
+        assert!(matches!(result.unwrap_err(), GpuSha3Error::InvalidInputLength(_)));
+    }
+
+    #[tokio::test]
+    async fn test_error_input_too_large() {
+        // Test that inputs exceeding the 8KB GPU buffer limit are rejected
+        let context = GpuContext::new().await.unwrap();
+        let hasher = GpuSha3Hasher::new(context, Sha3Variant::Sha3_256).unwrap();
+        let oversized_input = vec![b'x'; 10000]; // Exceeds 8192 byte limit
+        let inputs = vec![oversized_input.as_slice()];
         let result = hasher.hash_batch(&inputs).await;
         assert!(result.is_err());
         assert!(matches!(result.unwrap_err(), GpuSha3Error::InvalidInputLength(_)));
