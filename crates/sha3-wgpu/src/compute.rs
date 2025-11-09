@@ -1,6 +1,7 @@
 //! GPU compute pipeline for SHA-3 batch hashing
 
 use futures::channel::oneshot;
+use sha3::digest::{Digest, ExtendableOutput, Update, XofReader};
 use sha3_core::{BatchHashParams, Sha3Variant};
 use wgpu::util::DeviceExt;
 use wgpu::*;
@@ -12,6 +13,80 @@ const SHADER_SOURCE: &str = include_str!("wgsl/sha3.wgsl");
 
 /// Maximum input size per hash in bytes (must match MAX_INPUT_SIZE in WGSL shader)
 const MAX_INPUT_SIZE: usize = 8192;
+
+fn cpu_hash_batch(inputs: &[&[u8]], params: &BatchHashParams) -> Result<Vec<u8>, GpuSha3Error> {
+    if inputs.is_empty() {
+        return Ok(Vec::new());
+    }
+
+    if inputs.len() != params.num_hashes {
+        return Err(GpuSha3Error::InvalidInputLength(params.num_hashes));
+    }
+
+    if !inputs.iter().all(|input| input.len() == params.input_length) {
+        return Err(GpuSha3Error::InvalidInputLength(params.input_length));
+    }
+
+    let output_bytes = params.get_output_bytes().map_err(GpuSha3Error::Core)?;
+    let mut output = Vec::with_capacity(inputs.len() * output_bytes);
+
+    match params.variant {
+        Sha3Variant::Sha3_224 => {
+            for input in inputs {
+                let mut hasher = sha3::Sha3_224::default();
+                Update::update(&mut hasher, *input);
+                let digest = Digest::finalize(hasher);
+                output.extend_from_slice(digest.as_ref());
+            }
+        }
+        Sha3Variant::Sha3_256 => {
+            for input in inputs {
+                let mut hasher = sha3::Sha3_256::default();
+                Update::update(&mut hasher, *input);
+                let digest = Digest::finalize(hasher);
+                output.extend_from_slice(digest.as_ref());
+            }
+        }
+        Sha3Variant::Sha3_384 => {
+            for input in inputs {
+                let mut hasher = sha3::Sha3_384::default();
+                Update::update(&mut hasher, *input);
+                let digest = Digest::finalize(hasher);
+                output.extend_from_slice(digest.as_ref());
+            }
+        }
+        Sha3Variant::Sha3_512 => {
+            for input in inputs {
+                let mut hasher = sha3::Sha3_512::default();
+                Update::update(&mut hasher, *input);
+                let digest = Digest::finalize(hasher);
+                output.extend_from_slice(digest.as_ref());
+            }
+        }
+        Sha3Variant::Shake128 => {
+            for input in inputs {
+                let mut hasher = sha3::Shake128::default();
+                Update::update(&mut hasher, *input);
+                let mut reader = ExtendableOutput::finalize_xof(hasher);
+                let mut buf = vec![0u8; output_bytes];
+                reader.read(&mut buf);
+                output.extend_from_slice(&buf);
+            }
+        }
+        Sha3Variant::Shake256 => {
+            for input in inputs {
+                let mut hasher = sha3::Shake256::default();
+                Update::update(&mut hasher, *input);
+                let mut reader = ExtendableOutput::finalize_xof(hasher);
+                let mut buf = vec![0u8; output_bytes];
+                reader.read(&mut buf);
+                output.extend_from_slice(&buf);
+            }
+        }
+    }
+
+    Ok(output)
+}
 
 /// GPU parameters structure matching WGSL uniform
 #[repr(C)]
@@ -136,7 +211,7 @@ impl GpuSha3Hasher {
 
         // Validate input size doesn't exceed GPU shader limits
         if params.input_length > MAX_INPUT_SIZE {
-            return Err(GpuSha3Error::InvalidInputLength(params.input_length));
+            return cpu_hash_batch(inputs, params);
         }
 
         let device = self.context.device();
