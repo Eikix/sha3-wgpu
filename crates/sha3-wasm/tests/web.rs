@@ -32,7 +32,7 @@ fn to_js_array(inputs: &[&[u8]]) -> Array {
 
 /// Convert bytes to hex string
 fn to_hex(bytes: &[u8]) -> String {
-    bytes.iter().map(|b| format!("{:02x}", b)).collect()
+    bytes.iter().map(|b| format!("{b:02x}")).collect()
 }
 
 // ============================================================================
@@ -390,7 +390,7 @@ async fn test_hash_batch_large_batch() {
 
     // Create 50 inputs
     let inputs_vec: Vec<Vec<u8>> =
-        (0..50).map(|i| format!("test input number {:03}", i).into_bytes()).collect();
+        (0..50).map(|i| format!("test input number {i:03}").into_bytes()).collect();
     let input_refs: Vec<&[u8]> = inputs_vec.iter().map(|v| v.as_slice()).collect();
     let inputs = to_js_array(&input_refs);
 
@@ -749,9 +749,7 @@ async fn test_edge_case_different_output_sizes() {
         assert_eq!(
             hash.length() as usize,
             *expected_size,
-            "Variant {} should produce {} bytes",
-            variant,
-            expected_size
+            "Variant {variant} should produce {expected_size} bytes"
         );
     }
 }

@@ -34,7 +34,7 @@ fn cpu_hash_batch(inputs: &[&[u8]], params: &BatchHashParams) -> Result<Vec<u8>,
         Sha3Variant::Sha3_224 => {
             for input in inputs {
                 let mut hasher = sha3::Sha3_224::default();
-                Update::update(&mut hasher, *input);
+                Update::update(&mut hasher, input);
                 let digest = Digest::finalize(hasher);
                 output.extend_from_slice(digest.as_ref());
             }
@@ -42,7 +42,7 @@ fn cpu_hash_batch(inputs: &[&[u8]], params: &BatchHashParams) -> Result<Vec<u8>,
         Sha3Variant::Sha3_256 => {
             for input in inputs {
                 let mut hasher = sha3::Sha3_256::default();
-                Update::update(&mut hasher, *input);
+                Update::update(&mut hasher, input);
                 let digest = Digest::finalize(hasher);
                 output.extend_from_slice(digest.as_ref());
             }
@@ -50,7 +50,7 @@ fn cpu_hash_batch(inputs: &[&[u8]], params: &BatchHashParams) -> Result<Vec<u8>,
         Sha3Variant::Sha3_384 => {
             for input in inputs {
                 let mut hasher = sha3::Sha3_384::default();
-                Update::update(&mut hasher, *input);
+                Update::update(&mut hasher, input);
                 let digest = Digest::finalize(hasher);
                 output.extend_from_slice(digest.as_ref());
             }
@@ -58,7 +58,7 @@ fn cpu_hash_batch(inputs: &[&[u8]], params: &BatchHashParams) -> Result<Vec<u8>,
         Sha3Variant::Sha3_512 => {
             for input in inputs {
                 let mut hasher = sha3::Sha3_512::default();
-                Update::update(&mut hasher, *input);
+                Update::update(&mut hasher, input);
                 let digest = Digest::finalize(hasher);
                 output.extend_from_slice(digest.as_ref());
             }
@@ -66,7 +66,7 @@ fn cpu_hash_batch(inputs: &[&[u8]], params: &BatchHashParams) -> Result<Vec<u8>,
         Sha3Variant::Shake128 => {
             for input in inputs {
                 let mut hasher = sha3::Shake128::default();
-                Update::update(&mut hasher, *input);
+                Update::update(&mut hasher, input);
                 let mut reader = ExtendableOutput::finalize_xof(hasher);
                 let mut buf = vec![0u8; output_bytes];
                 reader.read(&mut buf);
@@ -76,7 +76,7 @@ fn cpu_hash_batch(inputs: &[&[u8]], params: &BatchHashParams) -> Result<Vec<u8>,
         Sha3Variant::Shake256 => {
             for input in inputs {
                 let mut hasher = sha3::Shake256::default();
-                Update::update(&mut hasher, *input);
+                Update::update(&mut hasher, input);
                 let mut reader = ExtendableOutput::finalize_xof(hasher);
                 let mut buf = vec![0u8; output_bytes];
                 reader.read(&mut buf);
