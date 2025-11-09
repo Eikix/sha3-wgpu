@@ -191,6 +191,9 @@ impl GpuSha3Hasher {
 
         // Validate all inputs are the same length
         let input_length = inputs[0].len();
+        if input_length > MAX_INPUT_SIZE {
+            return Err(GpuSha3Error::InvalidInputLength(input_length));
+        }
         if !inputs.iter().all(|input| input.len() == input_length) {
             return Err(GpuSha3Error::InvalidInputLength(input_length));
         }
