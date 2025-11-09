@@ -22,7 +22,7 @@
     "build:release": "wasm-pack build --release --target web --out-dir ../../pkg crates/sha3-wasm",
     "build:threads": "RUSTFLAGS='-C target-feature=+atomics,+bulk-memory' wasm-pack build --target web --out-dir ../../pkg crates/sha3-wasm",
     "test": "cargo test",
-    "test:wasm": "wasm-pack test --headless --firefox",
+    "test:wasm": "wasm-pack test --headless --chrome",
     "bench": "cargo bench",
     "clean": "cargo clean && rm -rf pkg pkg-web pkg-bundler node_modules examples/browser/node_modules examples/browser/dist",
     "demo": "npm run build && cd examples/browser && npm install && npm run dev",

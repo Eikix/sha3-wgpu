@@ -57,7 +57,7 @@ mod tests {
         }
 
         // Compare results
-        assert_eq!(gpu_results.len(), expected.len(), "Result length mismatch for {:?}", variant);
+        assert_eq!(gpu_results.len(), expected.len(), "Result length mismatch for {variant:?}");
 
         for (i, (gpu_chunk, ref_chunk)) in
             gpu_results.chunks(output_size).zip(expected.chunks(output_size)).enumerate()
@@ -65,9 +65,7 @@ mod tests {
             assert_eq!(
                 gpu_chunk,
                 ref_chunk,
-                "Hash mismatch at index {} for {:?}\nGPU:  {}\nCPU:  {}",
-                i,
-                variant,
+                "Hash mismatch at index {i} for {variant:?}\nGPU:  {}\nCPU:  {}",
                 hex::encode(gpu_chunk),
                 hex::encode(ref_chunk)
             );
@@ -103,7 +101,7 @@ mod tests {
     async fn test_sha3_256_large_batch() {
         // Ensure all inputs have the same length by using fixed-width formatting
         let data: Vec<Vec<u8>> =
-            (0..100).map(|i| format!("test input number {:03}", i).into_bytes()).collect();
+            (0..100).map(|i| format!("test input number {i:03}").into_bytes()).collect();
         let inputs: Vec<&[u8]> = data.iter().map(|v| v.as_slice()).collect();
 
         test_variant_against_reference(Sha3Variant::Sha3_256, &inputs).await.unwrap();

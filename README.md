@@ -26,9 +26,10 @@ This project uses a Rust workspace with multiple crates:
 ## Prerequisites
 
 - Rust (latest stable)
-- wasm-pack (`cargo install wasm-pack`)
+- wasm-pack (`cargo install wasm-pack`) - required for WASM builds and testing
 - **Modern browser with WebGPU support** (Chrome/Edge 113+) for browser demos
 - GPU with WebGPU support (for browser usage) or Vulkan/Metal/DX12 (for native usage)
+- Google Chrome (headless) - required for running WASM tests
 
 ## Quick Start
 
@@ -58,8 +59,11 @@ npm run demo
 ### 3. Run tests
 
 ```bash
-# Run all tests (compares GPU output vs official SHA-3)
+# Run all Rust tests (compares GPU output vs official SHA-3)
 cargo test
+
+# Run WASM binding tests (requires wasm-pack and WebGPU-enabled Chrome)
+wasm-pack test --headless --chrome crates/sha3-wasm
 
 # Run benchmarks (GPU vs CPU performance)
 cargo bench
@@ -209,11 +213,19 @@ This implementation includes several GPU-specific optimizations:
 
 ## Testing
 
-This library includes comprehensive tests comparing GPU output against the official `sha3` crate:
+This library includes comprehensive tests at multiple levels:
+
+### Native Rust Tests
+
+GPU implementation tests comparing output against the official `sha3` crate:
 
 ```bash
-# Run all tests
+# Run all native tests
 cargo test
+
+# Run specific crate tests
+cargo test -p sha3-core
+cargo test -p sha3-wgpu
 
 # Run specific test
 cargo test test_sha3_256_batch
@@ -230,6 +242,41 @@ Tests cover:
 - Small batches (4 inputs)
 - Large batches (100+ inputs)
 - Long inputs (10KB+)
+
+### WASM Binding Tests
+
+The `sha3-wasm` crate includes 70+ comprehensive tests for the JavaScript/WASM bindings that run in a headless browser:
+
+```bash
+# Prerequisites: Install wasm-pack
+cargo install wasm-pack
+
+# Run WASM tests in Chrome (headless)
+wasm-pack test --headless --chrome crates/sha3-wasm
+
+# Run with console output visible
+wasm-pack test --headless --chrome crates/sha3-wasm -- --nocapture
+```
+
+WASM tests cover:
+
+- **Type conversions**: Uint8Array ↔ Vec<u8>, JavaScript Array handling
+- **Constructor tests**: All SHA-3 variants initialization and property getters
+- **Error handling**: Invalid variants, empty arrays, edge cases
+- **hashSingle()**: Empty, small, large inputs across all variants
+- **hashBatch()**: Single/multiple items, consistency, batch vs individual comparison
+- **hashBatchWithLength()**: SHAKE variants with custom output sizes
+- **Standalone functions**: `sha3()` and `sha3Batch()` convenience functions
+- **Correctness verification**: Known SHA-3 test vectors (NIST vectors)
+- **Edge cases**: Boundary conditions, hasher reuse, large inputs (1MB+)
+
+**Important Notes:**
+
+- WASM tests run in an actual browser environment to properly test WebGPU integration
+- **Tests require a GPU with WebGPU support** - they will fail in headless CI environments without GPU
+- Run these tests **locally** on a machine with a compatible GPU and WebGPU-enabled browser
+- Only ~5 tests (type conversions and error handling) will pass in CI without GPU
+- The remaining 50+ tests require actual WebGPU initialization and will fail in CI (this is expected)
 
 ## Benchmarking
 
@@ -312,7 +359,9 @@ MIT OR Apache-2.0
 
 Contributions are welcome! Please ensure:
 
-- All tests pass (`cargo test`)
+- All Rust tests pass (`cargo test`)
+- WASM binding tests pass locally (`wasm-pack test --headless --chrome crates/sha3-wasm`)
+  - Note: WASM tests require a GPU and will fail in CI - this is expected
 - Code is formatted (`cargo fmt`)
 - No clippy warnings (`cargo clippy`)
 - Benchmarks show no performance regression
