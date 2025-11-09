@@ -3,8 +3,9 @@ import "./App.css";
 import BasicDemo from "./components/BasicDemo";
 import PerformanceDemo from "./components/PerformanceDemo";
 import AllVariantsDemo from "./components/AllVariantsDemo";
+import MerkleTreeDemo from "./components/MerkleTreeDemo";
 
-type Tab = "basic" | "performance" | "variants";
+type Tab = "basic" | "performance" | "merkle" | "variants";
 
 function App() {
   const [activeTab, setActiveTab] = useState<Tab>("basic");
@@ -86,6 +87,13 @@ function App() {
           Performance
         </button>
         <button
+          className={`tab-button ${activeTab === "merkle" ? "active" : ""}`}
+          onClick={() => setActiveTab("merkle")}
+          disabled={!webgpuSupported}
+        >
+          Merkle Tree
+        </button>
+        <button
           className={`tab-button ${activeTab === "variants" ? "active" : ""}`}
           onClick={() => setActiveTab("variants")}
           disabled={!webgpuSupported}
@@ -97,6 +105,7 @@ function App() {
       <div className="demo-section">
         {activeTab === "basic" && <BasicDemo />}
         {activeTab === "performance" && <PerformanceDemo />}
+        {activeTab === "merkle" && <MerkleTreeDemo />}
         {activeTab === "variants" && <AllVariantsDemo />}
       </div>
     </div>
