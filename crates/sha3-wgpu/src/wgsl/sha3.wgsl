@@ -73,6 +73,11 @@ fn xor_u64(a: vec2<u32>, b: vec2<u32>) -> vec2<u32> {
     return vec2<u32>(a.x ^ b.x, a.y ^ b.y);
 }
 
+// Helper: AND two 64-bit values (represented as vec2<u32>)
+fn and_u64(a: vec2<u32>, b: vec2<u32>) -> vec2<u32> {
+    return vec2<u32>(a.x & b.x, a.y & b.y);
+}
+
 // Helper: Rotate left for 64-bit values (represented as vec2<u32>)
 fn rotl_u64(x: vec2<u32>, n: u32) -> vec2<u32> {
     if (n == 0u) {
@@ -187,7 +192,8 @@ fn keccak_f1600(state: ptr<function, array<vec2<u32>, 25>>) {
             for (var i = 0u; i < 5u; i = i + 1u) {
                 // NOT operation: ~x = XOR with all 1s
                 let not_b1 = xor_u64(bc[(i + 1u) % 5u], vec2<u32>(0xFFFFFFFFu, 0xFFFFFFFFu));
-                (*state)[j + i] = xor_u64((*state)[j + i], xor_u64(not_b1, bc[(i + 2u) % 5u]));
+                let and_term = and_u64(not_b1, bc[(i + 2u) % 5u]);
+                (*state)[j + i] = xor_u64(bc[i], and_term);
             }
         }
 

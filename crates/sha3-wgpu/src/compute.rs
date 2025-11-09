@@ -248,6 +248,13 @@ impl GpuSha3Hasher {
             sender.send(result).unwrap();
         });
 
+        // Ensure the mapping callback is processed on native targets.
+        // On native, wgpu requires explicit polling for asynchronous operations.
+        #[allow(unused_must_use)]
+        {
+            device.poll(wgpu::PollType::Wait { submission_index: None, timeout: None });
+        }
+
         // In WASM, wasm-bindgen-futures will poll the device automatically
         // Wait for the mapping callback to fire
         receiver
