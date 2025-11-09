@@ -309,8 +309,9 @@ impl GpuSha3Hasher {
             compute_pass.set_pipeline(&self.pipeline);
             compute_pass.set_bind_group(0, &bind_group, &[]);
 
-            // Dispatch workgroups (one thread per hash, 64 threads per workgroup)
-            let workgroup_size = 64;
+            // Dispatch workgroups (one thread per hash, 128 threads per workgroup)
+            // Optimized: Increased from 64 to 128 for better GPU occupancy
+            let workgroup_size = 128;
             let num_workgroups = (params.num_hashes + workgroup_size - 1) / workgroup_size;
             compute_pass.dispatch_workgroups(num_workgroups as u32, 1, 1);
         }
