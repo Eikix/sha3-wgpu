@@ -271,7 +271,9 @@ impl GpuSha3Hasher {
         // Wait for the mapping callback to fire
         receiver
             .await
-            .map_err(|_| GpuSha3Error::BufferMapping("Failed to receive buffer mapping result".into()))?
+            .map_err(|_| {
+                GpuSha3Error::BufferMapping("Failed to receive buffer mapping result".into())
+            })?
             .map_err(|e| GpuSha3Error::BufferMapping(format!("Buffer mapping failed: {e:?}")))?;
 
         // Extract output data

@@ -170,8 +170,7 @@ mod tests {
         let context = GpuContext::new().await.unwrap();
         let hasher = GpuSha3Hasher::new(context, Sha3Variant::Shake128).unwrap();
         let inputs = vec![b"test".as_slice()];
-        let params = BatchHashParams::new(Sha3Variant::Shake128, 1, 4)
-            .with_output_length(32);
+        let params = BatchHashParams::new(Sha3Variant::Shake128, 1, 4).with_output_length(32);
         let result = hasher.hash_batch_with_params(&inputs, &params).await;
         assert!(result.is_ok());
         assert_eq!(result.unwrap().len(), 32);
@@ -203,8 +202,8 @@ mod tests {
         let hasher = GpuSha3Hasher::new(context, Sha3Variant::Shake256).unwrap();
         let inputs = vec![b"test input for SHAKE256".as_slice()];
 
-        let params = BatchHashParams::new(Sha3Variant::Shake256, 1, inputs[0].len())
-            .with_output_length(64);
+        let params =
+            BatchHashParams::new(Sha3Variant::Shake256, 1, inputs[0].len()).with_output_length(64);
         let result = hasher.hash_batch_with_params(&inputs, &params).await;
         assert!(result.is_ok());
         assert_eq!(result.unwrap().len(), 64);

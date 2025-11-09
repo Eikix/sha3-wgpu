@@ -90,8 +90,7 @@ mod tests {
 
     #[test]
     fn test_batch_hash_params_with_output_length() {
-        let params = BatchHashParams::new(Sha3Variant::Shake128, 5, 32)
-            .with_output_length(64);
+        let params = BatchHashParams::new(Sha3Variant::Shake128, 5, 32).with_output_length(64);
         assert_eq!(params.output_length, Some(64));
     }
 
@@ -103,8 +102,7 @@ mod tests {
 
     #[test]
     fn test_batch_hash_params_get_output_bytes_shake_with_length() {
-        let params = BatchHashParams::new(Sha3Variant::Shake128, 5, 32)
-            .with_output_length(64);
+        let params = BatchHashParams::new(Sha3Variant::Shake128, 5, 32).with_output_length(64);
         assert_eq!(params.get_output_bytes().unwrap(), 64);
     }
 
@@ -117,8 +115,7 @@ mod tests {
     #[test]
     fn test_batch_hash_params_get_output_bytes_custom_override() {
         // Even for fixed-length variants, custom output_length takes precedence
-        let params = BatchHashParams::new(Sha3Variant::Sha3_256, 5, 32)
-            .with_output_length(16);
+        let params = BatchHashParams::new(Sha3Variant::Sha3_256, 5, 32).with_output_length(16);
         assert_eq!(params.get_output_bytes().unwrap(), 16);
     }
 }
