@@ -29,7 +29,7 @@ This project uses a Rust workspace with multiple crates:
 - wasm-pack (`cargo install wasm-pack`) - required for WASM builds and testing
 - **Modern browser with WebGPU support** (Chrome/Edge 113+) for browser demos
 - GPU with WebGPU support (for browser usage) or Vulkan/Metal/DX12 (for native usage)
-- Firefox or Chrome - required for running WASM tests
+- Google Chrome (headless) - required for running WASM tests
 
 ## Quick Start
 
@@ -62,9 +62,7 @@ npm run demo
 # Run all Rust tests (compares GPU output vs official SHA-3)
 cargo test
 
-# Run WASM binding tests (requires wasm-pack and browser)
-wasm-pack test --headless --firefox crates/sha3-wasm
-# or in Chrome:
+# Run WASM binding tests (requires wasm-pack and WebGPU-enabled Chrome)
 wasm-pack test --headless --chrome crates/sha3-wasm
 
 # Run benchmarks (GPU vs CPU performance)
@@ -253,14 +251,11 @@ The `sha3-wasm` crate includes 70+ comprehensive tests for the JavaScript/WASM b
 # Prerequisites: Install wasm-pack
 cargo install wasm-pack
 
-# Run WASM tests in Firefox (headless)
-wasm-pack test --headless --firefox crates/sha3-wasm
-
 # Run WASM tests in Chrome (headless)
 wasm-pack test --headless --chrome crates/sha3-wasm
 
 # Run with console output visible
-wasm-pack test --headless --firefox crates/sha3-wasm -- --nocapture
+wasm-pack test --headless --chrome crates/sha3-wasm -- --nocapture
 ```
 
 WASM tests cover:
@@ -365,7 +360,7 @@ MIT OR Apache-2.0
 Contributions are welcome! Please ensure:
 
 - All Rust tests pass (`cargo test`)
-- WASM binding tests pass locally (`wasm-pack test --headless --firefox crates/sha3-wasm`)
+- WASM binding tests pass locally (`wasm-pack test --headless --chrome crates/sha3-wasm`)
   - Note: WASM tests require a GPU and will fail in CI - this is expected
 - Code is formatted (`cargo fmt`)
 - No clippy warnings (`cargo clippy`)

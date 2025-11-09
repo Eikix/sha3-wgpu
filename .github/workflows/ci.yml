@@ -48,14 +48,13 @@ jobs:
           # Run tests for crates that don't require GPU
           cargo test -p sha3-core
 
-      - name: Run WASM binding tests
+      - name: Run WASM binding tests (Chrome)
         continue-on-error: true
         run: |
-          # Run WASM tests in headless browser
+          # Run WASM tests in headless Chrome
           # Note: Most tests will fail in CI because WebGPU requires a real GPU
           # Type conversion and error handling tests should pass
           cd crates/sha3-wasm
-          wasm-pack test --headless --firefox || echo "WASM tests require WebGPU (not available in CI)"
           wasm-pack test --headless --chrome || echo "Chrome tests skipped"
 
       - name: Check formatting

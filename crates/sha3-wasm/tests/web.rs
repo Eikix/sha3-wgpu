@@ -320,6 +320,13 @@ async fn test_hash_batch_with_empty_inputs() {
     assert!(result.is_ok());
     let hashes = result.unwrap();
     assert_eq!(hashes.length(), 3);
+
+    for i in 0..3 {
+        let hash = Uint8Array::from(hashes.get(i));
+        assert_eq!(hash.length(), 32);
+        let hex = to_hex(&from_uint8_array(&hash));
+        assert_eq!(hex, "a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a");
+    }
 }
 
 #[wasm_bindgen_test]
@@ -356,6 +363,25 @@ async fn test_hash_batch_vs_single() {
 
     assert_eq!(from_uint8_array(&hash1_single), from_uint8_array(&hash1_batch));
     assert_eq!(from_uint8_array(&hash2_single), from_uint8_array(&hash2_batch));
+}
+
+#[wasm_bindgen_test]
+async fn test_hash_batch_mismatched_lengths_error() {
+    let hasher = Sha3WasmHasher::new("sha3-256").await.unwrap();
+    let inputs = to_js_array(&[b"", b"abc"]);
+    let result = hasher.hash_batch(&inputs).await;
+
+    assert!(result.is_err(), "Expected mismatched input lengths to error");
+    if let Err(err) = result {
+        if let Some(message) = err.as_string() {
+            assert!(
+                message.contains("same length") || message.contains("Invalid input length"),
+                "Unexpected error message: {message}"
+            );
+        } else {
+            panic!("Expected string error message for mismatched lengths");
+        }
+    }
 }
 
 #[wasm_bindgen_test]
@@ -504,6 +530,24 @@ async fn test_sha3_batch_function_invalid_variant() {
     assert!(result.is_err());
 }
 
+#[wasm_bindgen_test]
+async fn test_sha3_batch_mismatched_lengths_error() {
+    let inputs = to_js_array(&[b"", b"abc"]);
+    let result = sha3_batch("sha3-256", &inputs).await;
+
+    assert!(result.is_err(), "Expected mismatched input lengths to error");
+    if let Err(err) = result {
+        if let Some(message) = err.as_string() {
+            assert!(
+                message.contains("same length") || message.contains("Invalid input length"),
+                "Unexpected error message: {message}"
+            );
+        } else {
+            panic!("Expected string error message for mismatched lengths");
+        }
+    }
+}
+
 // ============================================================================
 // Correctness Tests with Known Test Vectors
 // ============================================================================
@@ -583,16 +627,16 @@ async fn test_sha3_256_long_message_correctness() {
 
 #[wasm_bindgen_test]
 async fn test_batch_correctness_multiple_known_vectors() {
-    // Test batch hashing with multiple known vectors
+    // Test batch hashing with multiple known vectors (all inputs same length)
     let hasher = Sha3WasmHasher::new("sha3-256").await.unwrap();
-    let inputs = to_js_array(&[b"", b"abc"]);
+    let inputs = to_js_array(&[b"abc", b"xyz"]);
     let result = hasher.hash_batch(&inputs).await.unwrap();
 
     let hash0_hex = to_hex(&from_uint8_array(&Uint8Array::from(result.get(0))));
     let hash1_hex = to_hex(&from_uint8_array(&Uint8Array::from(result.get(1))));
 
-    assert_eq!(hash0_hex, "a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a");
-    assert_eq!(hash1_hex, "3a985da74fe225b2045c172d6bd390bd855f086e3e9d525b46bfe24511431532");
+    assert_eq!(hash0_hex, "3a985da74fe225b2045c172d6bd390bd855f086e3e9d525b46bfe24511431532");
+    assert_eq!(hash1_hex, "54a18f2b4253b2283d4ac73cd0ec23a30f674d0b36d586eff3de90f355c2b3d7");
 }
 
 #[wasm_bindgen_test]
@@ -608,14 +652,14 @@ async fn test_standalone_sha3_function_correctness() {
 #[wasm_bindgen_test]
 async fn test_standalone_sha3_batch_correctness() {
     // Test standalone batch function with known vectors
-    let inputs = to_js_array(&[b"", b"abc"]);
+    let inputs = to_js_array(&[b"abc", b"xyz"]);
     let result = sha3_batch("sha3-256", &inputs).await.unwrap();
 
     let hash0_hex = to_hex(&from_uint8_array(&Uint8Array::from(result.get(0))));
     let hash1_hex = to_hex(&from_uint8_array(&Uint8Array::from(result.get(1))));
 
-    assert_eq!(hash0_hex, "a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a");
-    assert_eq!(hash1_hex, "3a985da74fe225b2045c172d6bd390bd855f086e3e9d525b46bfe24511431532");
+    assert_eq!(hash0_hex, "3a985da74fe225b2045c172d6bd390bd855f086e3e9d525b46bfe24511431532");
+    assert_eq!(hash1_hex, "54a18f2b4253b2283d4ac73cd0ec23a30f674d0b36d586eff3de90f355c2b3d7");
 }
 
 // ============================================================================
