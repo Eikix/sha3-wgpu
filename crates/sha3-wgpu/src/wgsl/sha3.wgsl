@@ -8,9 +8,10 @@
 //    - Optimized: array<u32, 2048> packing 4 bytes per u32 = 8KB per thread
 //    - **Major GPU occupancy improvement** (can run 4x more concurrent threads)
 //
-// 2. **Workgroup size: 128 threads (2x increase from 64)**
-//    - Better wave/warp utilization on modern GPUs
-//    - Improved SM/CU occupancy
+// 2. **Workgroup size: 256 threads (4x increase from 64)**
+//    - Optimal wave/warp utilization on modern GPUs (8 warps)
+//    - Maximum SM/CU occupancy for compute workloads
+//    - Better hiding of memory latency
 //
 // 3. **Sequential XORs in theta step** (reduced function call overhead)
 //    - Flattened nested XOR calls to sequential operations
@@ -325,8 +326,8 @@ fn apply_padding(
 }
 
 // Main compute shader - processes one hash per thread
-// Optimized: Increased workgroup size for better occupancy
-@compute @workgroup_size(128, 1, 1)
+// Optimized: Increased workgroup size for maximum occupancy
+@compute @workgroup_size(256, 1, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let hash_idx = global_id.x;
 

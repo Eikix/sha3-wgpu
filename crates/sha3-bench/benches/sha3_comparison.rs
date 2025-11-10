@@ -17,14 +17,23 @@ fn bench_cpu_sha3(data: &[Vec<u8>]) -> Vec<Vec<u8>> {
 }
 
 /// Benchmark GPU SHA-3 (our implementation)
-async fn bench_gpu_sha3(hasher: &GpuSha3Hasher, data: &[&[u8]]) -> Vec<u8> {
+async fn bench_gpu_sha3(hasher: &mut GpuSha3Hasher, data: &[&[u8]]) -> Vec<u8> {
     hasher.hash_batch(data).await.unwrap()
 }
 
-fn setup_gpu_hasher() -> GpuSha3Hasher {
+fn create_gpu_hasher() -> GpuSha3Hasher {
     pollster::block_on(async {
         let context = GpuContext::new().await.unwrap();
-        GpuSha3Hasher::new(context, Sha3Variant::Sha3_256).unwrap()
+        // Enable persistent buffers for maximum performance
+        // Configure for large batches (10k hashes) and reasonable input sizes (4KB max)
+        let max_batch_size = 10000;
+        let max_input_length = 4096; // 4KB per input
+        let max_output_bytes = 32; // SHA3-256 output
+        GpuSha3Hasher::with_persistent_buffers(
+            context,
+            Sha3Variant::Sha3_256,
+            Some((max_batch_size, max_input_length, max_output_bytes))
+        ).unwrap()
     })
 }
 
@@ -34,8 +43,6 @@ fn benchmark_batch_sizes(c: &mut Criterion) {
     // Test different batch sizes
     let batch_sizes = vec![1, 10, 50, 100, 500, 1000];
     let input_size = 64; // 64 bytes per input
-
-    let gpu_hasher = setup_gpu_hasher();
 
     for batch_size in batch_sizes {
         let data: Vec<Vec<u8>> =
@@ -66,7 +73,8 @@ fn benchmark_batch_sizes(c: &mut Criterion) {
         let input_refs: Vec<&[u8]> = padded_data.iter().map(|v| v.as_slice()).collect();
         group.bench_with_input(BenchmarkId::new("GPU", batch_size), &input_refs, |b, data| {
             b.iter(|| {
-                let result = pollster::block_on(bench_gpu_sha3(&gpu_hasher, black_box(data)));
+                let mut gpu_hasher = create_gpu_hasher();
+                let result = pollster::block_on(bench_gpu_sha3(&mut gpu_hasher, black_box(data)));
                 black_box(result);
             });
         });
@@ -81,8 +89,6 @@ fn benchmark_input_sizes(c: &mut Criterion) {
     // Test different input sizes with fixed batch size
     let input_sizes = vec![32, 64, 128, 256, 512, 1024, 4096];
     let batch_size = 100;
-
-    let gpu_hasher = setup_gpu_hasher();
 
     for input_size in input_sizes {
         let data: Vec<Vec<u8>> = (0..batch_size).map(|_| vec![0xAB; input_size]).collect();
@@ -102,7 +108,8 @@ fn benchmark_input_sizes(c: &mut Criterion) {
         let input_refs: Vec<&[u8]> = data.iter().map(|v| v.as_slice()).collect();
         group.bench_with_input(BenchmarkId::new("GPU", input_size), &input_refs, |b, data| {
             b.iter(|| {
-                let result = pollster::block_on(bench_gpu_sha3(&gpu_hasher, black_box(data)));
+                let mut gpu_hasher = create_gpu_hasher();
+                let result = pollster::block_on(bench_gpu_sha3(&mut gpu_hasher, black_box(data)));
                 black_box(result);
             });
         });
@@ -124,8 +131,6 @@ fn benchmark_single_vs_batch(c: &mut Criterion) {
             v
         })
         .collect();
-
-    let gpu_hasher = setup_gpu_hasher();
 
     // Single hash repeated
     group.bench_function("CPU_single_x100", |b| {
@@ -151,7 +156,8 @@ fn benchmark_single_vs_batch(c: &mut Criterion) {
     let input_refs: Vec<&[u8]> = data.iter().map(|v| v.as_slice()).collect();
     group.bench_function("GPU_batch_x100", |b| {
         b.iter(|| {
-            let result = pollster::block_on(bench_gpu_sha3(&gpu_hasher, black_box(&input_refs)));
+            let mut gpu_hasher = create_gpu_hasher();
+            let result = pollster::block_on(bench_gpu_sha3(&mut gpu_hasher, black_box(&input_refs)));
             black_box(result);
         });
     });
@@ -165,8 +171,6 @@ fn benchmark_large_batch(c: &mut Criterion) {
 
     let batch_sizes = vec![1000, 5000, 10000];
     let input_size = 64;
-
-    let gpu_hasher = setup_gpu_hasher();
 
     for batch_size in batch_sizes {
         let data: Vec<Vec<u8>> = (0..batch_size)
@@ -192,7 +196,8 @@ fn benchmark_large_batch(c: &mut Criterion) {
         let input_refs: Vec<&[u8]> = data.iter().map(|v| v.as_slice()).collect();
         group.bench_with_input(BenchmarkId::new("GPU", batch_size), &input_refs, |b, data| {
             b.iter(|| {
-                let result = pollster::block_on(bench_gpu_sha3(&gpu_hasher, black_box(data)));
+                let mut gpu_hasher = create_gpu_hasher();
+                let result = pollster::block_on(bench_gpu_sha3(&mut gpu_hasher, black_box(data)));
                 black_box(result);
             });
         });
