@@ -14,7 +14,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let hasher = GpuSha3Hasher::with_persistent_buffers(
         context,
         Sha3Variant::Sha3_256,
-        Some((1000, 4096, 32))
+        Some((1000, 4096, 32)),
     )?;
     println!("GPU hasher created with persistent buffers: {}", hasher.buffers.is_some());
 

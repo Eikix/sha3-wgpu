@@ -9,8 +9,9 @@ async fn main() {
     let hasher = GpuSha3Hasher::with_persistent_buffers(
         context,
         Sha3Variant::Sha3_256,
-        Some((1000, 4096, 32))
-    ).unwrap();
+        Some((1000, 4096, 32)),
+    )
+    .unwrap();
 
     let input = b"test";
     let inputs = vec![input.as_slice()];

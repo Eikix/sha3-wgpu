@@ -32,8 +32,9 @@ fn create_gpu_hasher() -> GpuSha3Hasher {
         GpuSha3Hasher::with_persistent_buffers(
             context,
             Sha3Variant::Sha3_256,
-            Some((max_batch_size, max_input_length, max_output_bytes))
-        ).unwrap()
+            Some((max_batch_size, max_input_length, max_output_bytes)),
+        )
+        .unwrap()
     })
 }
 
@@ -157,7 +158,8 @@ fn benchmark_single_vs_batch(c: &mut Criterion) {
     group.bench_function("GPU_batch_x100", |b| {
         b.iter(|| {
             let mut gpu_hasher = create_gpu_hasher();
-            let result = pollster::block_on(bench_gpu_sha3(&mut gpu_hasher, black_box(&input_refs)));
+            let result =
+                pollster::block_on(bench_gpu_sha3(&mut gpu_hasher, black_box(&input_refs)));
             black_box(result);
         });
     });
