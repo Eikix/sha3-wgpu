@@ -59,8 +59,7 @@ fn benchmark_batch_sizes(c: &mut Criterion) {
             })
             .collect();
 
-        let total_bytes = (batch_size * input_size) as u64;
-        group.throughput(Throughput::Bytes(total_bytes));
+        group.throughput(Throughput::Elements(batch_size as u64));
 
         // Benchmark CPU
         group.bench_with_input(BenchmarkId::new("CPU", batch_size), &padded_data, |b, data| {
@@ -94,8 +93,7 @@ fn benchmark_input_sizes(c: &mut Criterion) {
     for input_size in input_sizes {
         let data: Vec<Vec<u8>> = (0..batch_size).map(|_| vec![0xAB; input_size]).collect();
 
-        let total_bytes = (batch_size * input_size) as u64;
-        group.throughput(Throughput::Bytes(total_bytes));
+        group.throughput(Throughput::Elements(batch_size as u64));
 
         // Benchmark CPU
         group.bench_with_input(BenchmarkId::new("CPU", input_size), &data, |b, data| {
@@ -183,8 +181,7 @@ fn benchmark_large_batch(c: &mut Criterion) {
             })
             .collect();
 
-        let total_bytes = (batch_size * input_size) as u64;
-        group.throughput(Throughput::Bytes(total_bytes));
+        group.throughput(Throughput::Elements(batch_size as u64));
 
         // CPU benchmark
         group.bench_with_input(BenchmarkId::new("CPU", batch_size), &data, |b, data| {
@@ -208,11 +205,71 @@ fn benchmark_large_batch(c: &mut Criterion) {
     group.finish();
 }
 
+fn benchmark_industry_standard(c: &mut Criterion) {
+    let mut group = c.benchmark_group("sha3_256_industry_standard");
+
+    // Industry-standard parameters adapted for WebGPU
+    group.sample_size(100); // 100 measured runs for statistical stability
+    group.warm_up_time(std::time::Duration::from_secs(5)); // 5-second warm-up
+
+    // Industry standard: 2^20 = 1,048,576 hashes to saturate GPU
+    // But WebGPU may have limitations, so test what works
+    let batch_sizes = vec![
+        100_000,    // 100K - reasonable for WebGPU
+        500_000,    // 500K
+        1_000_000,  // 1M - industry standard target
+    ];
+
+    for &batch_size in &batch_sizes {
+        // Create test data - use fixed pattern for reproducible results
+        let data: Vec<Vec<u8>> = (0..batch_size)
+            .map(|_| vec![0x41; 64]) // 64 bytes of 'A' characters
+            .collect();
+
+        // Report throughput as hashes/second (industry standard unit)
+        group.throughput(Throughput::Elements(batch_size as u64));
+
+        // CPU baseline for comparison
+        group.bench_with_input(
+            BenchmarkId::new("CPU_SHA3_256", batch_size),
+            &data,
+            |b, data| {
+                b.iter(|| {
+                    let results = bench_cpu_sha3(black_box(data));
+                    black_box(results);
+                });
+            }
+        );
+
+        // GPU benchmark - focus on kernel execution time
+        let input_refs: Vec<&[u8]> = data.iter().map(|v| v.as_slice()).collect();
+        group.bench_with_input(
+            BenchmarkId::new("GPU_SHA3_256", batch_size),
+            &input_refs,
+            |b, data| {
+                b.iter_batched(
+                    // Setup: create hasher (done once per batch, not timed)
+                    || create_gpu_hasher(),
+                    // Measured: only the hash computation
+                    |mut hasher| {
+                        let result = pollster::block_on(bench_gpu_sha3(&mut hasher, black_box(data)));
+                        black_box(result);
+                    },
+                    criterion::BatchSize::SmallInput
+                );
+            }
+        );
+    }
+
+    group.finish();
+}
+
 criterion_group!(
     benches,
     benchmark_batch_sizes,
     benchmark_input_sizes,
     benchmark_single_vs_batch,
-    benchmark_large_batch
+    benchmark_large_batch,
+    benchmark_industry_standard
 );
 criterion_main!(benches);
