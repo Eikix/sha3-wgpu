@@ -193,7 +193,7 @@ async fn test_hasher_new_case_insensitive() {
 
 #[wasm_bindgen_test]
 async fn test_hash_batch_empty_array() {
-    let hasher = Sha3WasmHasher::new("sha3-256").await.unwrap();
+    let mut hasher = Sha3WasmHasher::new("sha3-256").await.unwrap();
     let empty_array = Array::new();
     let result = hasher.hash_batch(&empty_array).await;
 
@@ -204,7 +204,7 @@ async fn test_hash_batch_empty_array() {
 
 #[wasm_bindgen_test]
 async fn test_hash_batch_with_length_empty_array() {
-    let hasher = Sha3WasmHasher::new("shake128").await.unwrap();
+    let mut hasher = Sha3WasmHasher::new("shake128").await.unwrap();
     let empty_array = Array::new();
     let result = hasher.hash_batch_with_length(&empty_array, 32).await;
 
@@ -219,7 +219,7 @@ async fn test_hash_batch_with_length_empty_array() {
 
 #[wasm_bindgen_test]
 async fn test_hash_single_empty_input() {
-    let hasher = Sha3WasmHasher::new("sha3-256").await.unwrap();
+    let mut hasher = Sha3WasmHasher::new("sha3-256").await.unwrap();
     let input = to_uint8_array(b"");
     let result = hasher.hash_single(&input).await;
 
@@ -230,7 +230,7 @@ async fn test_hash_single_empty_input() {
 
 #[wasm_bindgen_test]
 async fn test_hash_single_small_input() {
-    let hasher = Sha3WasmHasher::new("sha3-256").await.unwrap();
+    let mut hasher = Sha3WasmHasher::new("sha3-256").await.unwrap();
     let input = to_uint8_array(b"hello");
     let result = hasher.hash_single(&input).await;
 
@@ -241,7 +241,7 @@ async fn test_hash_single_small_input() {
 
 #[wasm_bindgen_test]
 async fn test_hash_single_large_input() {
-    let hasher = Sha3WasmHasher::new("sha3-256").await.unwrap();
+    let mut hasher = Sha3WasmHasher::new("sha3-256").await.unwrap();
     let large_input: Vec<u8> = vec![b'a'; 10000];
     let input = to_uint8_array(&large_input);
     let result = hasher.hash_single(&input).await;
@@ -256,22 +256,22 @@ async fn test_hash_single_different_variants() {
     let test_input = b"test input";
 
     // SHA3-224
-    let hasher = Sha3WasmHasher::new("sha3-224").await.unwrap();
+    let mut hasher = Sha3WasmHasher::new("sha3-224").await.unwrap();
     let result = hasher.hash_single(&to_uint8_array(test_input)).await.unwrap();
     assert_eq!(result.length(), 28);
 
     // SHA3-256
-    let hasher = Sha3WasmHasher::new("sha3-256").await.unwrap();
+    let mut hasher = Sha3WasmHasher::new("sha3-256").await.unwrap();
     let result = hasher.hash_single(&to_uint8_array(test_input)).await.unwrap();
     assert_eq!(result.length(), 32);
 
     // SHA3-384
-    let hasher = Sha3WasmHasher::new("sha3-384").await.unwrap();
+    let mut hasher = Sha3WasmHasher::new("sha3-384").await.unwrap();
     let result = hasher.hash_single(&to_uint8_array(test_input)).await.unwrap();
     assert_eq!(result.length(), 48);
 
     // SHA3-512
-    let hasher = Sha3WasmHasher::new("sha3-512").await.unwrap();
+    let mut hasher = Sha3WasmHasher::new("sha3-512").await.unwrap();
     let result = hasher.hash_single(&to_uint8_array(test_input)).await.unwrap();
     assert_eq!(result.length(), 64);
 }
@@ -282,7 +282,7 @@ async fn test_hash_single_different_variants() {
 
 #[wasm_bindgen_test]
 async fn test_hash_batch_single_item() {
-    let hasher = Sha3WasmHasher::new("sha3-256").await.unwrap();
+    let mut hasher = Sha3WasmHasher::new("sha3-256").await.unwrap();
     let inputs = to_js_array(&[b"hello"]);
     let result = hasher.hash_batch(&inputs).await;
 
@@ -296,7 +296,7 @@ async fn test_hash_batch_single_item() {
 
 #[wasm_bindgen_test]
 async fn test_hash_batch_multiple_items() {
-    let hasher = Sha3WasmHasher::new("sha3-256").await.unwrap();
+    let mut hasher = Sha3WasmHasher::new("sha3-256").await.unwrap();
     let inputs = to_js_array(&[b"hello", b"world", b"batch"]);
     let result = hasher.hash_batch(&inputs).await;
 
@@ -313,7 +313,7 @@ async fn test_hash_batch_multiple_items() {
 
 #[wasm_bindgen_test]
 async fn test_hash_batch_with_empty_inputs() {
-    let hasher = Sha3WasmHasher::new("sha3-256").await.unwrap();
+    let mut hasher = Sha3WasmHasher::new("sha3-256").await.unwrap();
     let inputs = to_js_array(&[b"", b"", b""]);
     let result = hasher.hash_batch(&inputs).await;
 
@@ -332,7 +332,7 @@ async fn test_hash_batch_with_empty_inputs() {
 #[wasm_bindgen_test]
 async fn test_hash_batch_consistency() {
     // Verify that hashing the same input multiple times produces the same hash
-    let hasher = Sha3WasmHasher::new("sha3-256").await.unwrap();
+    let mut hasher = Sha3WasmHasher::new("sha3-256").await.unwrap();
     let inputs = to_js_array(&[b"test", b"test", b"test"]);
     let result = hasher.hash_batch(&inputs).await.unwrap();
 
@@ -347,7 +347,7 @@ async fn test_hash_batch_consistency() {
 #[wasm_bindgen_test]
 async fn test_hash_batch_vs_single() {
     // Verify that batch hashing produces same results as individual hashes
-    let hasher = Sha3WasmHasher::new("sha3-256").await.unwrap();
+    let mut hasher = Sha3WasmHasher::new("sha3-256").await.unwrap();
     let test_inputs = [b"hello".as_slice(), b"world".as_slice()];
 
     // Hash individually
@@ -367,7 +367,7 @@ async fn test_hash_batch_vs_single() {
 
 #[wasm_bindgen_test]
 async fn test_hash_batch_mismatched_lengths_error() {
-    let hasher = Sha3WasmHasher::new("sha3-256").await.unwrap();
+    let mut hasher = Sha3WasmHasher::new("sha3-256").await.unwrap();
     let inputs = to_js_array(&[b"", b"abc"]);
     let result = hasher.hash_batch(&inputs).await;
 
@@ -386,7 +386,7 @@ async fn test_hash_batch_mismatched_lengths_error() {
 
 #[wasm_bindgen_test]
 async fn test_hash_batch_large_batch() {
-    let hasher = Sha3WasmHasher::new("sha3-256").await.unwrap();
+    let mut hasher = Sha3WasmHasher::new("sha3-256").await.unwrap();
 
     // Create 50 inputs
     let inputs_vec: Vec<Vec<u8>> =
@@ -413,7 +413,7 @@ async fn test_hash_batch_large_batch() {
 
 #[wasm_bindgen_test]
 async fn test_hash_batch_with_length_shake128() {
-    let hasher = Sha3WasmHasher::new("shake128").await.unwrap();
+    let mut hasher = Sha3WasmHasher::new("shake128").await.unwrap();
     let inputs = to_js_array(&[b"test1", b"test2", b"test3"]);
 
     // Request 32 bytes output
@@ -431,7 +431,7 @@ async fn test_hash_batch_with_length_shake128() {
 
 #[wasm_bindgen_test]
 async fn test_hash_batch_with_length_shake256() {
-    let hasher = Sha3WasmHasher::new("shake256").await.unwrap();
+    let mut hasher = Sha3WasmHasher::new("shake256").await.unwrap();
     let inputs = to_js_array(&[b"test1", b"test2"]);
 
     // Request 64 bytes output
@@ -449,7 +449,7 @@ async fn test_hash_batch_with_length_shake256() {
 
 #[wasm_bindgen_test]
 async fn test_hash_batch_with_length_custom_sizes() {
-    let hasher = Sha3WasmHasher::new("shake128").await.unwrap();
+    let mut hasher = Sha3WasmHasher::new("shake128").await.unwrap();
     let inputs = to_js_array(&[b"test"]);
 
     // Test various output sizes
@@ -556,7 +556,7 @@ async fn test_sha3_batch_mismatched_lengths_error() {
 async fn test_sha3_256_empty_correctness() {
     // Known SHA3-256 hash of empty string
     // echo -n "" | openssl dgst -sha3-256
-    let hasher = Sha3WasmHasher::new("sha3-256").await.unwrap();
+    let mut hasher = Sha3WasmHasher::new("sha3-256").await.unwrap();
     let input = to_uint8_array(b"");
     let result = hasher.hash_single(&input).await.unwrap();
     let hash_hex = to_hex(&from_uint8_array(&result));
@@ -567,7 +567,7 @@ async fn test_sha3_256_empty_correctness() {
 #[wasm_bindgen_test]
 async fn test_sha3_256_abc_correctness() {
     // Known SHA3-256 hash of "abc"
-    let hasher = Sha3WasmHasher::new("sha3-256").await.unwrap();
+    let mut hasher = Sha3WasmHasher::new("sha3-256").await.unwrap();
     let input = to_uint8_array(b"abc");
     let result = hasher.hash_single(&input).await.unwrap();
     let hash_hex = to_hex(&from_uint8_array(&result));
@@ -578,7 +578,7 @@ async fn test_sha3_256_abc_correctness() {
 #[wasm_bindgen_test]
 async fn test_sha3_224_abc_correctness() {
     // Known SHA3-224 hash of "abc"
-    let hasher = Sha3WasmHasher::new("sha3-224").await.unwrap();
+    let mut hasher = Sha3WasmHasher::new("sha3-224").await.unwrap();
     let input = to_uint8_array(b"abc");
     let result = hasher.hash_single(&input).await.unwrap();
     let hash_hex = to_hex(&from_uint8_array(&result));
@@ -589,7 +589,7 @@ async fn test_sha3_224_abc_correctness() {
 #[wasm_bindgen_test]
 async fn test_sha3_384_abc_correctness() {
     // Known SHA3-384 hash of "abc"
-    let hasher = Sha3WasmHasher::new("sha3-384").await.unwrap();
+    let mut hasher = Sha3WasmHasher::new("sha3-384").await.unwrap();
     let input = to_uint8_array(b"abc");
     let result = hasher.hash_single(&input).await.unwrap();
     let hash_hex = to_hex(&from_uint8_array(&result));
@@ -603,7 +603,7 @@ async fn test_sha3_384_abc_correctness() {
 #[wasm_bindgen_test]
 async fn test_sha3_512_abc_correctness() {
     // Known SHA3-512 hash of "abc"
-    let hasher = Sha3WasmHasher::new("sha3-512").await.unwrap();
+    let mut hasher = Sha3WasmHasher::new("sha3-512").await.unwrap();
     let input = to_uint8_array(b"abc");
     let result = hasher.hash_single(&input).await.unwrap();
     let hash_hex = to_hex(&from_uint8_array(&result));
@@ -617,7 +617,7 @@ async fn test_sha3_512_abc_correctness() {
 #[wasm_bindgen_test]
 async fn test_sha3_256_long_message_correctness() {
     // Known SHA3-256 hash of "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq"
-    let hasher = Sha3WasmHasher::new("sha3-256").await.unwrap();
+    let mut hasher = Sha3WasmHasher::new("sha3-256").await.unwrap();
     let input = to_uint8_array(b"abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq");
     let result = hasher.hash_single(&input).await.unwrap();
     let hash_hex = to_hex(&from_uint8_array(&result));
@@ -628,7 +628,7 @@ async fn test_sha3_256_long_message_correctness() {
 #[wasm_bindgen_test]
 async fn test_batch_correctness_multiple_known_vectors() {
     // Test batch hashing with multiple known vectors (all inputs same length)
-    let hasher = Sha3WasmHasher::new("sha3-256").await.unwrap();
+    let mut hasher = Sha3WasmHasher::new("sha3-256").await.unwrap();
     let inputs = to_js_array(&[b"abc", b"xyz"]);
     let result = hasher.hash_batch(&inputs).await.unwrap();
 
@@ -668,7 +668,7 @@ async fn test_standalone_sha3_batch_correctness() {
 
 #[wasm_bindgen_test]
 async fn test_edge_case_all_zeros() {
-    let hasher = Sha3WasmHasher::new("sha3-256").await.unwrap();
+    let mut hasher = Sha3WasmHasher::new("sha3-256").await.unwrap();
     let input = to_uint8_array(&[0u8; 100]);
     let result = hasher.hash_single(&input).await;
 
@@ -679,7 +679,7 @@ async fn test_edge_case_all_zeros() {
 
 #[wasm_bindgen_test]
 async fn test_edge_case_all_ones() {
-    let hasher = Sha3WasmHasher::new("sha3-256").await.unwrap();
+    let mut hasher = Sha3WasmHasher::new("sha3-256").await.unwrap();
     let input = to_uint8_array(&[0xffu8; 100]);
     let result = hasher.hash_single(&input).await;
 
@@ -690,7 +690,7 @@ async fn test_edge_case_all_ones() {
 
 #[wasm_bindgen_test]
 async fn test_edge_case_single_byte() {
-    let hasher = Sha3WasmHasher::new("sha3-256").await.unwrap();
+    let mut hasher = Sha3WasmHasher::new("sha3-256").await.unwrap();
     let input = to_uint8_array(&[0x42]);
     let result = hasher.hash_single(&input).await;
 
@@ -703,7 +703,7 @@ async fn test_edge_case_single_byte() {
 async fn test_edge_case_boundary_136_bytes() {
     // SHA3-256 has a rate of 136 bytes (1088 bits)
     // Test at exactly the boundary
-    let hasher = Sha3WasmHasher::new("sha3-256").await.unwrap();
+    let mut hasher = Sha3WasmHasher::new("sha3-256").await.unwrap();
     let input = to_uint8_array(&[b'a'; 136]);
     let result = hasher.hash_single(&input).await;
 
@@ -715,7 +715,7 @@ async fn test_edge_case_boundary_136_bytes() {
 #[wasm_bindgen_test]
 async fn test_edge_case_just_over_boundary() {
     // Test just over the rate boundary
-    let hasher = Sha3WasmHasher::new("sha3-256").await.unwrap();
+    let mut hasher = Sha3WasmHasher::new("sha3-256").await.unwrap();
     let input = to_uint8_array(&[b'a'; 137]);
     let result = hasher.hash_single(&input).await;
 
@@ -727,7 +727,7 @@ async fn test_edge_case_just_over_boundary() {
 #[wasm_bindgen_test]
 async fn test_edge_case_very_large_input() {
     // Test with 1MB input
-    let hasher = Sha3WasmHasher::new("sha3-256").await.unwrap();
+    let mut hasher = Sha3WasmHasher::new("sha3-256").await.unwrap();
     let input = to_uint8_array(&vec![b'x'; 1024 * 1024]);
     let result = hasher.hash_single(&input).await;
 
@@ -757,7 +757,7 @@ async fn test_edge_case_different_output_sizes() {
 #[wasm_bindgen_test]
 async fn test_edge_case_batch_with_varying_same_length() {
     // All inputs must be same length for batch processing
-    let hasher = Sha3WasmHasher::new("sha3-256").await.unwrap();
+    let mut hasher = Sha3WasmHasher::new("sha3-256").await.unwrap();
     let inputs = to_js_array(&[b"aaaa", b"bbbb", b"cccc"]);
     let result = hasher.hash_batch(&inputs).await;
 
@@ -769,7 +769,7 @@ async fn test_edge_case_batch_with_varying_same_length() {
 #[wasm_bindgen_test]
 async fn test_reuse_hasher_multiple_times() {
     // Verify hasher can be reused multiple times
-    let hasher = Sha3WasmHasher::new("sha3-256").await.unwrap();
+    let mut hasher = Sha3WasmHasher::new("sha3-256").await.unwrap();
 
     let input1 = to_uint8_array(b"first");
     let hash1 = hasher.hash_single(&input1).await.unwrap();
@@ -788,8 +788,8 @@ async fn test_reuse_hasher_multiple_times() {
 #[wasm_bindgen_test]
 async fn test_different_hashers_independent() {
     // Verify different hasher instances are independent
-    let hasher1 = Sha3WasmHasher::new("sha3-256").await.unwrap();
-    let hasher2 = Sha3WasmHasher::new("sha3-512").await.unwrap();
+    let mut hasher1 = Sha3WasmHasher::new("sha3-256").await.unwrap();
+    let mut hasher2 = Sha3WasmHasher::new("sha3-512").await.unwrap();
 
     let input = to_uint8_array(b"test");
 

@@ -75,7 +75,7 @@ impl Sha3WasmHasher {
     /// console.log(Buffer.from(hash).toString('hex'));
     /// ```
     #[wasm_bindgen(js_name = hashSingle)]
-    pub async fn hash_single(&self, input: &Uint8Array) -> Result<Uint8Array, JsValue> {
+    pub async fn hash_single(&mut self, input: &Uint8Array) -> Result<Uint8Array, JsValue> {
         let input_bytes = input.to_vec();
         let inputs = vec![input_bytes.as_slice()];
 
@@ -122,7 +122,7 @@ impl Sha3WasmHasher {
     /// });
     /// ```
     #[wasm_bindgen(js_name = hashBatch)]
-    pub async fn hash_batch(&self, inputs: &Array) -> Result<Array, JsValue> {
+    pub async fn hash_batch(&mut self, inputs: &Array) -> Result<Array, JsValue> {
         if inputs.length() == 0 {
             return Ok(Array::new());
         }
@@ -166,7 +166,7 @@ impl Sha3WasmHasher {
     /// Array of Uint8Array hashes with specified length
     #[wasm_bindgen(js_name = hashBatchWithLength)]
     pub async fn hash_batch_with_length(
-        &self,
+        &mut self,
         inputs: &Array,
         output_length: usize,
     ) -> Result<Array, JsValue> {
@@ -242,7 +242,7 @@ impl Sha3WasmHasher {
 /// ```
 #[wasm_bindgen]
 pub async fn sha3(variant: &str, input: &Uint8Array) -> Result<Uint8Array, JsValue> {
-    let hasher = Sha3WasmHasher::new(variant).await?;
+    let mut hasher = Sha3WasmHasher::new(variant).await?;
     hasher.hash_single(input).await
 }
 
@@ -258,6 +258,6 @@ pub async fn sha3(variant: &str, input: &Uint8Array) -> Result<Uint8Array, JsVal
 /// ```
 #[wasm_bindgen(js_name = sha3Batch)]
 pub async fn sha3_batch(variant: &str, inputs: &Array) -> Result<Array, JsValue> {
-    let hasher = Sha3WasmHasher::new(variant).await?;
+    let mut hasher = Sha3WasmHasher::new(variant).await?;
     hasher.hash_batch(inputs).await
 }
